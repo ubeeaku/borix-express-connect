@@ -1,8 +1,9 @@
 import { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { Menu, X, Bus, Phone } from "lucide-react";
+import { Menu, X, Phone } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import borixLogo from "@/assets/borix-logo.png";
 
 const navLinks = [
   { name: "Home", path: "/" },
@@ -20,13 +21,8 @@ export const Navbar = () => {
       <div className="container-custom">
         <div className="flex items-center justify-between h-16 md:h-20">
           {/* Logo */}
-          <Link to="/" className="flex items-center gap-2">
-            <div className="w-10 h-10 rounded-xl bg-accent flex items-center justify-center">
-              <Bus className="w-6 h-6 text-accent-foreground" />
-            </div>
-            <span className="text-xl font-bold text-white">
-              Borix<span className="text-accent">Express</span>
-            </span>
+          <Link to="/" className="flex items-center">
+            <img src={borixLogo} alt="Borix Express" className="h-12 md:h-14 w-auto" />
           </Link>
 
           {/* Desktop Navigation */}
