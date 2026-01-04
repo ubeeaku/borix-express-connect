@@ -1,5 +1,6 @@
 import { Link } from "react-router-dom";
-import { Bus, Phone, Mail, MapPin, Facebook, Twitter, Instagram } from "lucide-react";
+import { Phone, Mail, MapPin, Facebook, Twitter, Instagram } from "lucide-react";
+import borixLogo from "@/assets/borix-logo.png";
 
 export const Footer = () => {
   return (
@@ -8,13 +9,8 @@ export const Footer = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12">
           {/* Brand */}
           <div className="space-y-4">
-            <Link to="/" className="flex items-center gap-2">
-              <div className="w-10 h-10 rounded-xl bg-accent flex items-center justify-center">
-                <Bus className="w-6 h-6 text-accent-foreground" />
-              </div>
-              <span className="text-xl font-bold">
-                Borix<span className="text-accent">Express</span>
-              </span>
+            <Link to="/" className="flex items-center">
+              <img src={borixLogo} alt="Borix Express" className="h-14 w-auto" />
             </Link>
             <p className="text-white/70 text-sm leading-relaxed">
               Nigeria's most reliable intercity transport service. Travel safely, comfortably, and on time.
