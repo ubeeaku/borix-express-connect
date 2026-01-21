@@ -15,7 +15,7 @@ const routes = [
     price: 15000,
     duration: "3 hours",
     departures: ["6:00 AM", "8:00 AM", "10:00 AM", "2:00 PM", "6:00 PM"],
-    availableSeats: 24,
+    availableSeats: 5,
     image: "https://images.unsplash.com/photo-1449824913935-59a10b8d2000?w=400&q=80",
   },
   {
@@ -25,7 +25,7 @@ const routes = [
     price: 15000,
     duration: "3 hours",
     departures: ["7:00 AM", "9:00 AM", "11:00 AM", "3:00 PM", "5:00 PM"],
-    availableSeats: 24,
+    availableSeats: 5,
     image: "https://images.unsplash.com/photo-1480714378408-67cf0d13bc1b?w=400&q=80",
   },
 ];
