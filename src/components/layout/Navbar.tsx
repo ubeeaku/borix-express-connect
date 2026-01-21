@@ -17,7 +17,7 @@ export const Navbar = () => {
   const location = useLocation();
 
   return (
-    <nav className="fixed top-0 left-0 right-0 z-50 bg-primary/95 backdrop-blur-md border-b border-white/10">
+    <nav className="fixed top-0 left-0 right-0 z-50 bg-white backdrop-blur-md border-b border-border shadow-sm">
       <div className="container-custom">
         <div className="flex items-center justify-between h-16 md:h-20">
           {/* Logo */}
@@ -34,7 +34,7 @@ export const Navbar = () => {
                 className={`text-sm font-medium transition-colors duration-200 ${
                   location.pathname === link.path
                     ? "text-accent"
-                    : "text-white/80 hover:text-white"
+                    : "text-primary/80 hover:text-primary"
                 }`}
               >
                 {link.name}
@@ -44,7 +44,7 @@ export const Navbar = () => {
 
           {/* Desktop CTA */}
           <div className="hidden md:flex items-center gap-4">
-            <a href="tel:+2348012345678" className="flex items-center gap-2 text-white/80 hover:text-white transition-colors">
+            <a href="tel:+2348012345678" className="flex items-center gap-2 text-primary/80 hover:text-primary transition-colors">
               <Phone className="w-4 h-4" />
               <span className="text-sm font-medium">+234 801 234 5678</span>
             </a>
@@ -58,7 +58,7 @@ export const Navbar = () => {
           {/* Mobile Menu Button */}
           <button
             onClick={() => setIsOpen(!isOpen)}
-            className="md:hidden p-2 text-white"
+            className="md:hidden p-2 text-primary"
           >
             {isOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
           </button>
@@ -72,7 +72,7 @@ export const Navbar = () => {
             initial={{ opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: "auto" }}
             exit={{ opacity: 0, height: 0 }}
-            className="md:hidden bg-primary border-t border-white/10"
+            className="md:hidden bg-white border-t border-border"
           >
             <div className="container-custom py-4 space-y-4">
               {navLinks.map((link) => (
@@ -83,13 +83,13 @@ export const Navbar = () => {
                   className={`block py-2 text-base font-medium ${
                     location.pathname === link.path
                       ? "text-accent"
-                      : "text-white/80"
+                      : "text-primary/80"
                   }`}
                 >
                   {link.name}
                 </Link>
               ))}
-              <div className="pt-4 border-t border-white/10">
+              <div className="pt-4 border-t border-border">
                 <Link to="/admin" onClick={() => setIsOpen(false)}>
                   <Button variant="accent" className="w-full">
                     Admin Dashboard
