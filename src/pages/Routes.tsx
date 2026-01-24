@@ -6,7 +6,7 @@ import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import josCity from "@/assets/jos-city.jpg";
+import josRock from "@/assets/jos-rock.jpg";
 import abujaCity from "@/assets/abuja-city.jpg";
 
 const routes = [
@@ -18,7 +18,7 @@ const routes = [
     duration: "4 hours",
     departures: ["7:00 AM", "1:00 PM"],
     availableSeats: 5,
-    image: josCity,
+    image: josRock,
   },
   {
     id: 2,
