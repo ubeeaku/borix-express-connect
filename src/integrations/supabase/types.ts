@@ -14,16 +14,120 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      bookings: {
+        Row: {
+          booking_reference: string
+          created_at: string | null
+          departure_time: string
+          id: string
+          number_of_seats: number
+          passenger_email: string
+          passenger_name: string
+          passenger_phone: string
+          payment_status: string
+          route_id: string
+          total_amount: number
+          travel_date: string
+        }
+        Insert: {
+          booking_reference: string
+          created_at?: string | null
+          departure_time: string
+          id?: string
+          number_of_seats: number
+          passenger_email: string
+          passenger_name: string
+          passenger_phone: string
+          payment_status?: string
+          route_id: string
+          total_amount: number
+          travel_date: string
+        }
+        Update: {
+          booking_reference?: string
+          created_at?: string | null
+          departure_time?: string
+          id?: string
+          number_of_seats?: number
+          passenger_email?: string
+          passenger_name?: string
+          passenger_phone?: string
+          payment_status?: string
+          route_id?: string
+          total_amount?: number
+          travel_date?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bookings_route_id_fkey"
+            columns: ["route_id"]
+            isOneToOne: false
+            referencedRelation: "routes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      routes: {
+        Row: {
+          created_at: string | null
+          destination: string
+          id: string
+          origin: string
+          price: number
+        }
+        Insert: {
+          created_at?: string | null
+          destination: string
+          id?: string
+          origin: string
+          price: number
+        }
+        Update: {
+          created_at?: string | null
+          destination?: string
+          id?: string
+          origin?: string
+          price?: number
+        }
+        Relationships: []
+      }
+      user_roles: {
+        Row: {
+          created_at: string | null
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
+      is_admin: { Args: { _user_id: string }; Returns: boolean }
     }
     Enums: {
-      [_ in never]: never
+      app_role: "admin" | "user"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +254,8 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      app_role: ["admin", "user"],
+    },
   },
 } as const
