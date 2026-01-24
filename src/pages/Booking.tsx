@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { useSearchParams, useNavigate } from "react-router-dom";
-import { MapPin, Calendar, Clock, Users, CreditCard, ArrowRight, Check } from "lucide-react";
+import { useSearchParams } from "react-router-dom";
+import { MapPin, Calendar, Clock, Users, CreditCard, ArrowRight, Check, Loader2 } from "lucide-react";
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
 import { Button } from "@/components/ui/button";
@@ -15,6 +15,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { toast } from "@/hooks/use-toast";
+import { usePaystack } from "@/hooks/usePaystack";
 
 const routes = [
   { id: "1", origin: "Jos", destination: "Abuja", price: 15000 },
@@ -31,7 +32,7 @@ const steps = [
 
 const Booking = () => {
   const [searchParams] = useSearchParams();
-  const navigate = useNavigate();
+  const { initializePayment, isLoading } = usePaystack();
   const [currentStep, setCurrentStep] = useState(1);
   const [formData, setFormData] = useState({
     routeId: searchParams.get("route") || "",
@@ -76,14 +77,32 @@ const Booking = () => {
     }
   };
 
-  const handlePayment = () => {
-    toast({
-      title: "Booking Confirmed! 🎉",
-      description: "Your booking has been confirmed. Check your email for the ticket.",
+  const handlePayment = async () => {
+    if (!selectedRoute) return;
+
+    const result = await initializePayment({
+      email: formData.email,
+      amount: totalPrice,
+      name: formData.name,
+      phone: formData.phone,
+      routeId: formData.routeId,
+      date: formData.date,
+      time: formData.time,
+      passengers: formData.passengers,
     });
-    setTimeout(() => {
-      navigate("/confirmation");
-    }, 2000);
+
+    if (result.success && result.authorization_url) {
+      // Store reference in session storage for verification on return
+      sessionStorage.setItem('paystack_reference', result.reference || '');
+      // Redirect to Paystack checkout
+      window.location.href = result.authorization_url;
+    } else {
+      toast({
+        title: "Payment Failed",
+        description: result.error || "Could not initialize payment. Please try again.",
+        variant: "destructive",
+      });
+    }
   };
 
   return (
@@ -326,6 +345,7 @@ const Booking = () => {
                     <Button
                       variant="outline"
                       onClick={() => setCurrentStep(currentStep - 1)}
+                      disabled={isLoading}
                     >
                       Back
                     </Button>
@@ -337,9 +357,23 @@ const Booking = () => {
                         <ArrowRight className="w-4 h-4" />
                       </Button>
                     ) : (
-                      <Button variant="hero" size="lg" onClick={handlePayment}>
-                        Pay ₦{totalPrice.toLocaleString()}
-                        <ArrowRight className="w-4 h-4" />
+                      <Button 
+                        variant="hero" 
+                        size="lg" 
+                        onClick={handlePayment}
+                        disabled={isLoading}
+                      >
+                        {isLoading ? (
+                          <>
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                            Processing...
+                          </>
+                        ) : (
+                          <>
+                            Pay ₦{totalPrice.toLocaleString()}
+                            <ArrowRight className="w-4 h-4" />
+                          </>
+                        )}
                       </Button>
                     )}
                   </div>
