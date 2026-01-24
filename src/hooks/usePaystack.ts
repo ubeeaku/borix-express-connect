@@ -10,6 +10,7 @@ interface PaystackInitParams {
   date: string;
   time: string;
   passengers: string;
+  seats: number[];
 }
 
 interface PaystackResponse {

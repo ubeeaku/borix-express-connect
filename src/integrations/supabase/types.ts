@@ -14,6 +14,51 @@ export type Database = {
   }
   public: {
     Tables: {
+      booked_seats: {
+        Row: {
+          booking_id: string
+          created_at: string
+          departure_time: string
+          id: string
+          route_id: string
+          seat_number: number
+          travel_date: string
+        }
+        Insert: {
+          booking_id: string
+          created_at?: string
+          departure_time: string
+          id?: string
+          route_id: string
+          seat_number: number
+          travel_date: string
+        }
+        Update: {
+          booking_id?: string
+          created_at?: string
+          departure_time?: string
+          id?: string
+          route_id?: string
+          seat_number?: number
+          travel_date?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "booked_seats_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "bookings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "booked_seats_route_id_fkey"
+            columns: ["route_id"]
+            isOneToOne: false
+            referencedRelation: "routes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       bookings: {
         Row: {
           booking_reference: string

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { useSearchParams } from "react-router-dom";
 import { MapPin, Calendar, Clock, Users, CreditCard, ArrowRight, Check, Loader2 } from "lucide-react";
@@ -16,24 +16,31 @@ import {
 } from "@/components/ui/select";
 import { toast } from "@/hooks/use-toast";
 import { usePaystack } from "@/hooks/usePaystack";
+import { SeatPicker } from "@/components/booking/SeatPicker";
+import { supabase } from "@/integrations/supabase/client";
 
-const routes = [
-  { id: "1", origin: "Jos", destination: "Abuja", price: 15000 },
-  { id: "2", origin: "Abuja", destination: "Jos", price: 15000 },
-];
+interface Route {
+  id: string;
+  origin: string;
+  destination: string;
+  price: number;
+}
 
 const departureTimes = ["7:00 AM", "1:00 PM"];
 
 const steps = [
   { id: 1, name: "Select Route", icon: MapPin },
-  { id: 2, name: "Passenger Details", icon: Users },
-  { id: 3, name: "Payment", icon: CreditCard },
+  { id: 2, name: "Choose Seats", icon: Users },
+  { id: 3, name: "Passenger Details", icon: Users },
+  { id: 4, name: "Payment", icon: CreditCard },
 ];
 
 const Booking = () => {
   const [searchParams] = useSearchParams();
   const { initializePayment, isLoading } = usePaystack();
   const [currentStep, setCurrentStep] = useState(1);
+  const [routes, setRoutes] = useState<Route[]>([]);
+  const [selectedSeats, setSelectedSeats] = useState<number[]>([]);
   const [formData, setFormData] = useState({
     routeId: searchParams.get("route") || "",
     date: "",
@@ -43,6 +50,24 @@ const Booking = () => {
     email: "",
     phone: "",
   });
+
+  // Fetch routes from database
+  useEffect(() => {
+    const fetchRoutes = async () => {
+      const { data, error } = await supabase
+        .from("routes")
+        .select("id, origin, destination, price");
+      if (!error && data) {
+        setRoutes(data);
+      }
+    };
+    fetchRoutes();
+  }, []);
+
+  // Reset seats when trip details change
+  useEffect(() => {
+    setSelectedSeats([]);
+  }, [formData.routeId, formData.date, formData.time, formData.passengers]);
 
   const selectedRoute = routes.find((r) => r.id === formData.routeId);
   const totalPrice = selectedRoute ? selectedRoute.price * parseInt(formData.passengers || "1") : 0;
@@ -63,6 +88,17 @@ const Booking = () => {
       }
     }
     if (currentStep === 2) {
+      const requiredSeats = parseInt(formData.passengers);
+      if (selectedSeats.length !== requiredSeats) {
+        toast({
+          title: "Select your seats",
+          description: `Please select ${requiredSeats} seat${requiredSeats > 1 ? "s" : ""} to continue.`,
+          variant: "destructive",
+        });
+        return;
+      }
+    }
+    if (currentStep === 3) {
       if (!formData.name || !formData.email || !formData.phone) {
         toast({
           title: "Please fill all fields",
@@ -72,7 +108,7 @@ const Booking = () => {
         return;
       }
     }
-    if (currentStep < 3) {
+    if (currentStep < 4) {
       setCurrentStep(currentStep + 1);
     }
   };
@@ -89,12 +125,11 @@ const Booking = () => {
       date: formData.date,
       time: formData.time,
       passengers: formData.passengers,
+      seats: selectedSeats,
     });
 
     if (result.success && result.authorization_url) {
-      // Store reference in session storage for verification on return
       sessionStorage.setItem('paystack_reference', result.reference || '');
-      // Redirect to Paystack checkout
       window.location.href = result.authorization_url;
     } else {
       toast({
@@ -249,6 +284,20 @@ const Booking = () => {
 
                 {currentStep === 2 && (
                   <div className="space-y-6">
+                    <h2 className="text-xl font-bold text-foreground">Choose Your Seats</h2>
+                    <SeatPicker
+                      routeId={formData.routeId}
+                      date={formData.date}
+                      time={formData.time}
+                      passengers={parseInt(formData.passengers)}
+                      selectedSeats={selectedSeats}
+                      onSeatsChange={setSelectedSeats}
+                    />
+                  </div>
+                )}
+
+                {currentStep === 3 && (
+                  <div className="space-y-6">
                     <h2 className="text-xl font-bold text-foreground">Passenger Details</h2>
 
                     <div className="space-y-4">
@@ -290,7 +339,7 @@ const Booking = () => {
                   </div>
                 )}
 
-                {currentStep === 3 && (
+                {currentStep === 4 && (
                   <div className="space-y-6">
                     <h2 className="text-xl font-bold text-foreground">Payment</h2>
 
@@ -310,8 +359,13 @@ const Booking = () => {
                         <span className="font-medium">{formData.time}</span>
                       </div>
                       <div className="flex justify-between">
-                        <span className="text-muted-foreground">Passengers</span>
-                        <span className="font-medium">{formData.passengers}</span>
+                        <span className="text-muted-foreground">Seats</span>
+                        <span className="font-medium">
+                          {selectedSeats.sort((a, b) => a - b).map((s) => {
+                            const labels = ["1A", "1B", "2A", "2B", "2C"];
+                            return labels[s - 1];
+                          }).join(", ")}
+                        </span>
                       </div>
                       <div className="flex justify-between">
                         <span className="text-muted-foreground">Passenger Name</span>
@@ -351,7 +405,7 @@ const Booking = () => {
                     </Button>
                   )}
                   <div className="ml-auto">
-                    {currentStep < 3 ? (
+                    {currentStep < 4 ? (
                       <Button variant="accent" onClick={handleNext}>
                         Continue
                         <ArrowRight className="w-4 h-4" />

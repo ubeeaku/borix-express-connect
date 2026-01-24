@@ -17,6 +17,7 @@ const InitSchema = z.object({
   date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Invalid date format'),
   time: z.string().min(1).max(20),
   passengers: z.string().regex(/^[1-5]$/, 'Passengers must be 1-5'),
+  seats: z.array(z.number().min(1).max(5)).min(1).max(5),
   callbackUrl: z.string().url().optional(),
 });
 
@@ -80,7 +81,7 @@ serve(async (req) => {
       );
     }
 
-    const { email, amount, name, phone, routeId, date, time, passengers, callbackUrl } = validatedInput;
+    const { email, amount, name, phone, routeId, date, time, passengers, seats, callbackUrl } = validatedInput;
 
     // Verify the authenticated user's email matches the booking email
     if (userEmail !== email) {
@@ -109,6 +110,31 @@ serve(async (req) => {
       );
     }
 
+    // Check if selected seats are available
+    const { data: existingSeats, error: seatsCheckError } = await supabase
+      .from('booked_seats')
+      .select('seat_number')
+      .eq('route_id', routeId)
+      .eq('travel_date', date)
+      .eq('departure_time', time)
+      .in('seat_number', seats);
+
+    if (seatsCheckError) {
+      console.error('Seat availability check failed');
+      return new Response(
+        JSON.stringify({ success: false, error: 'Unable to verify seat availability' }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    if (existingSeats && existingSeats.length > 0) {
+      const takenSeats = existingSeats.map(s => s.seat_number).join(', ');
+      return new Response(
+        JSON.stringify({ success: false, error: `Seat(s) ${takenSeats} are no longer available` }),
+        { status: 409, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
     // Generate a cryptographically secure reference
     const randomPart = crypto.randomUUID().replace(/-/g, '').substring(0, 12).toUpperCase();
     const reference = `BRX-${randomPart}`;
@@ -132,11 +158,13 @@ serve(async (req) => {
           travel_date: date,
           departure_time: time,
           passengers: parseInt(passengers),
+          seats,
           custom_fields: [
             { display_name: "Passenger Name", variable_name: "passenger_name", value: name },
             { display_name: "Phone Number", variable_name: "phone", value: phone },
             { display_name: "Travel Date", variable_name: "travel_date", value: date },
             { display_name: "Departure Time", variable_name: "departure_time", value: time },
+            { display_name: "Seats", variable_name: "seats", value: seats.join(', ') },
           ]
         }
       }),
@@ -153,7 +181,7 @@ serve(async (req) => {
     }
 
     // Create booking record in database
-    const { error: bookingError } = await supabase
+    const { data: bookingData, error: bookingError } = await supabase
       .from('bookings')
       .insert({
         booking_reference: reference,
@@ -166,13 +194,38 @@ serve(async (req) => {
         number_of_seats: parseInt(passengers),
         total_amount: amount,
         payment_status: 'pending',
-      });
+      })
+      .select('id')
+      .single();
 
-    if (bookingError) {
+    if (bookingError || !bookingData) {
       console.error('Booking creation failed');
       return new Response(
         JSON.stringify({ success: false, error: 'Unable to process booking' }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Reserve the seats (linking them to this booking)
+    const seatRecords = seats.map(seatNumber => ({
+      booking_id: bookingData.id,
+      seat_number: seatNumber,
+      route_id: routeId,
+      travel_date: date,
+      departure_time: time,
+    }));
+
+    const { error: seatInsertError } = await supabase
+      .from('booked_seats')
+      .insert(seatRecords);
+
+    if (seatInsertError) {
+      console.error('Seat reservation failed:', seatInsertError.message);
+      // Rollback booking if seat reservation fails
+      await supabase.from('bookings').delete().eq('id', bookingData.id);
+      return new Response(
+        JSON.stringify({ success: false, error: 'Selected seats are no longer available' }),
+        { status: 409, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
