@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import {
@@ -17,8 +17,10 @@ import {
   TrendingUp,
   TrendingDown,
   Bell,
+  Loader2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useAdminAuth } from "@/hooks/useAdminAuth";
 
 const sidebarItems = [
   { name: "Dashboard", icon: LayoutDashboard, path: "/admin/dashboard" },
@@ -73,7 +75,24 @@ const recentBookings = [
 const AdminDashboard = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const location = useLocation();
-  const navigate = useNavigate();
+  const { user, isAdmin, isLoading, signOut } = useAdminAuth();
+
+  // Show loading state while checking authentication
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-muted flex items-center justify-center">
+        <div className="text-center">
+          <Loader2 className="w-8 h-8 animate-spin text-primary mx-auto mb-4" />
+          <p className="text-muted-foreground">Verifying access...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // If not authenticated or not admin, the hook will redirect to login
+  if (!user || !isAdmin) {
+    return null;
+  }
 
   return (
     <div className="min-h-screen bg-muted flex">
@@ -119,7 +138,7 @@ const AdminDashboard = () => {
             <Button
               variant="ghost"
               className="w-full justify-start text-white/70 hover:text-white hover:bg-white/10"
-              onClick={() => navigate("/")}
+              onClick={signOut}
             >
               <LogOut className="w-5 h-5 mr-3" />
               Logout
@@ -159,7 +178,9 @@ const AdminDashboard = () => {
                 <span className="absolute top-1 right-1 w-2 h-2 bg-accent rounded-full" />
               </button>
               <div className="w-10 h-10 rounded-full bg-accent flex items-center justify-center">
-                <span className="text-accent-foreground font-bold">A</span>
+                <span className="text-accent-foreground font-bold">
+                  {user.email?.[0]?.toUpperCase() || 'A'}
+                </span>
               </div>
             </div>
           </div>

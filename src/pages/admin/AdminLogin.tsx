@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Bus, Lock, Mail, ArrowRight } from "lucide-react";
@@ -6,6 +6,42 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
+import { z } from "zod";
+
+// Input validation schema
+const loginSchema = z.object({
+  email: z.string().email("Please enter a valid email address").max(255),
+  password: z.string().min(6, "Password must be at least 6 characters").max(128),
+});
+
+// Helper function to check admin role
+const checkIsAdmin = async (userId: string): Promise<boolean> => {
+  try {
+    // Try RPC call first (will work after migration is applied)
+    const { data, error } = await (supabase.rpc as any)('is_admin', { _user_id: userId });
+    
+    if (!error && data === true) {
+      return true;
+    }
+    
+    // Fallback: try direct table query
+    const { data: roleData, error: roleError } = await (supabase as any)
+      .from('user_roles')
+      .select('role')
+      .eq('user_id', userId)
+      .eq('role', 'admin')
+      .single();
+    
+    if (!roleError && roleData?.role === 'admin') {
+      return true;
+    }
+    
+    return false;
+  } catch {
+    return false;
+  }
+};
 
 const AdminLogin = () => {
   const navigate = useNavigate();
@@ -13,27 +49,72 @@ const AdminLogin = () => {
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
+  // Check if already logged in as admin
+  useEffect(() => {
+    const checkAuth = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session?.user) {
+        const isAdmin = await checkIsAdmin(session.user.id);
+        if (isAdmin) {
+          navigate("/admin/dashboard");
+        }
+      }
+    };
+    checkAuth();
+  }, [navigate]);
+
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
 
-    // Simulate login - In production, this would use Supabase auth
-    setTimeout(() => {
-      if (email && password) {
-        toast({
-          title: "Welcome back! 👋",
-          description: "Redirecting to dashboard...",
-        });
-        navigate("/admin/dashboard");
-      } else {
-        toast({
-          title: "Login failed",
-          description: "Please enter valid credentials",
-          variant: "destructive",
-        });
+    try {
+      // Validate inputs
+      const validatedInput = loginSchema.parse({ email, password });
+
+      // Authenticate with Supabase
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email: validatedInput.email,
+        password: validatedInput.password,
+      });
+
+      if (error) {
+        throw new Error(error.message);
       }
+
+      if (!data.user) {
+        throw new Error("Authentication failed");
+      }
+
+      // Check if user has admin role
+      const isAdmin = await checkIsAdmin(data.user.id);
+
+      if (!isAdmin) {
+        // Sign out if not admin
+        await supabase.auth.signOut();
+        throw new Error("You do not have admin access");
+      }
+
+      toast({
+        title: "Welcome back! 👋",
+        description: "Redirecting to dashboard...",
+      });
+      navigate("/admin/dashboard");
+
+    } catch (error) {
+      const message = error instanceof z.ZodError 
+        ? error.errors[0]?.message || "Invalid input"
+        : error instanceof Error 
+          ? error.message 
+          : "Login failed";
+      
+      toast({
+        title: "Login failed",
+        description: message,
+        variant: "destructive",
+      });
+    } finally {
       setIsLoading(false);
-    }, 1000);
+    }
   };
 
   return (
@@ -75,6 +156,8 @@ const AdminLogin = () => {
                   onChange={(e) => setEmail(e.target.value)}
                   className="h-12 pl-10"
                   required
+                  maxLength={255}
+                  autoComplete="email"
                 />
               </div>
             </div>
@@ -91,6 +174,9 @@ const AdminLogin = () => {
                   onChange={(e) => setPassword(e.target.value)}
                   className="h-12 pl-10"
                   required
+                  minLength={6}
+                  maxLength={128}
+                  autoComplete="current-password"
                 />
               </div>
             </div>
@@ -105,13 +191,6 @@ const AdminLogin = () => {
               {isLoading ? "Signing in..." : "Sign In"}
               <ArrowRight className="w-4 h-4" />
             </Button>
-
-            <p className="text-center text-sm text-muted-foreground">
-              Forgot your password?{" "}
-              <a href="#" className="text-accent hover:underline">
-                Reset it here
-              </a>
-            </p>
           </form>
         </div>
 
