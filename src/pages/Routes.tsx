@@ -6,6 +6,8 @@ import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import josCity from "@/assets/jos-city.jpg";
+import abujaCity from "@/assets/abuja-city.jpg";
 
 const routes = [
   {
@@ -13,20 +15,20 @@ const routes = [
     origin: "Jos",
     destination: "Abuja",
     price: 15000,
-    duration: "3 hours",
+    duration: "4 hours",
     departures: ["7:00 AM", "1:00 PM"],
     availableSeats: 5,
-    image: "https://images.unsplash.com/photo-1449824913935-59a10b8d2000?w=400&q=80",
+    image: josCity,
   },
   {
     id: 2,
     origin: "Abuja",
     destination: "Jos",
     price: 15000,
-    duration: "3 hours",
+    duration: "4 hours",
     departures: ["7:00 AM", "1:00 PM"],
     availableSeats: 5,
-    image: "https://images.unsplash.com/photo-1480714378408-67cf0d13bc1b?w=400&q=80",
+    image: abujaCity,
   },
 ];
 
