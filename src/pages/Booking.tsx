@@ -17,15 +17,11 @@ import {
 import { toast } from "@/hooks/use-toast";
 
 const routes = [
-  { id: "1", origin: "Lagos", destination: "Abuja", price: 15000 },
-  { id: "2", origin: "Jos", destination: "Abuja", price: 8000 },
-  { id: "3", origin: "Lagos", destination: "Port Harcourt", price: 12000 },
-  { id: "4", origin: "Kano", destination: "Lagos", price: 18000 },
-  { id: "5", origin: "Enugu", destination: "Lagos", price: 10000 },
-  { id: "6", origin: "Abuja", destination: "Kaduna", price: 5000 },
+  { id: "1", origin: "Jos", destination: "Abuja", price: 15000 },
+  { id: "2", origin: "Abuja", destination: "Jos", price: 15000 },
 ];
 
-const departureTimes = ["6:00 AM", "8:00 AM", "10:00 AM", "12:00 PM", "2:00 PM", "4:00 PM", "6:00 PM"];
+const departureTimes = ["7:00 AM", "1:00 PM"];
 
 const steps = [
   { id: 1, name: "Select Route", icon: MapPin },
