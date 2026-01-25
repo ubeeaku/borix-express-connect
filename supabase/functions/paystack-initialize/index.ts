@@ -145,7 +145,59 @@ serve(async (req) => {
     const randomPart = crypto.randomUUID().replace(/-/g, '').substring(0, 12).toUpperCase();
     const reference = `BRX-${randomPart}`;
 
-    // Initialize Paystack transaction
+    // SECURITY FIX: Reserve seats BEFORE initializing Paystack to prevent race condition
+    // This ensures users are not charged for seats that become unavailable
+    
+    // Step 1: Create booking record first (with 'reserved' status initially)
+    const { data: bookingData, error: bookingError } = await supabase
+      .from('bookings')
+      .insert({
+        booking_reference: reference,
+        route_id: routeId,
+        passenger_name: name,
+        passenger_email: email,
+        passenger_phone: phone,
+        travel_date: date,
+        departure_time: time,
+        number_of_seats: parseInt(passengers),
+        total_amount: amount,
+        payment_status: 'reserved', // Use 'reserved' until payment is initialized
+      })
+      .select('id')
+      .single();
+
+    if (bookingError || !bookingData) {
+      console.error('Booking creation failed');
+      return new Response(
+        JSON.stringify({ success: false, error: 'Unable to process booking' }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Step 2: Reserve seats BEFORE Paystack initialization (fail fast if taken)
+    const seatRecords = seats.map(seatNumber => ({
+      booking_id: bookingData.id,
+      seat_number: seatNumber,
+      route_id: routeId,
+      travel_date: date,
+      departure_time: time,
+    }));
+
+    const { error: seatInsertError } = await supabase
+      .from('booked_seats')
+      .insert(seatRecords);
+
+    if (seatInsertError) {
+      console.error('Seat reservation failed:', seatInsertError.message);
+      // Rollback booking - no Paystack transaction created yet!
+      await supabase.from('bookings').delete().eq('id', bookingData.id);
+      return new Response(
+        JSON.stringify({ success: false, error: 'Selected seats are no longer available' }),
+        { status: 409, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Step 3: Initialize Paystack ONLY after seats are successfully reserved
     const paystackResponse = await fetch('https://api.paystack.co/transaction/initialize', {
       method: 'POST',
       headers: {
@@ -180,60 +232,20 @@ serve(async (req) => {
 
     if (!paystackData.status) {
       console.error('Payment gateway error');
+      // Rollback: release seats and delete booking since payment failed
+      await supabase.from('booked_seats').delete().eq('booking_id', bookingData.id);
+      await supabase.from('bookings').delete().eq('id', bookingData.id);
       return new Response(
         JSON.stringify({ success: false, error: 'Unable to initialize payment' }),
         { status: 502, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    // Create booking record in database
-    const { data: bookingData, error: bookingError } = await supabase
+    // Step 4: Update booking status to 'pending' now that payment is initialized
+    await supabase
       .from('bookings')
-      .insert({
-        booking_reference: reference,
-        route_id: routeId,
-        passenger_name: name,
-        passenger_email: email,
-        passenger_phone: phone,
-        travel_date: date,
-        departure_time: time,
-        number_of_seats: parseInt(passengers),
-        total_amount: amount,
-        payment_status: 'pending',
-      })
-      .select('id')
-      .single();
-
-    if (bookingError || !bookingData) {
-      console.error('Booking creation failed');
-      return new Response(
-        JSON.stringify({ success: false, error: 'Unable to process booking' }),
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-
-    // Reserve the seats (linking them to this booking)
-    const seatRecords = seats.map(seatNumber => ({
-      booking_id: bookingData.id,
-      seat_number: seatNumber,
-      route_id: routeId,
-      travel_date: date,
-      departure_time: time,
-    }));
-
-    const { error: seatInsertError } = await supabase
-      .from('booked_seats')
-      .insert(seatRecords);
-
-    if (seatInsertError) {
-      console.error('Seat reservation failed:', seatInsertError.message);
-      // Rollback booking if seat reservation fails
-      await supabase.from('bookings').delete().eq('id', bookingData.id);
-      return new Response(
-        JSON.stringify({ success: false, error: 'Selected seats are no longer available' }),
-        { status: 409, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
+      .update({ payment_status: 'pending' })
+      .eq('id', bookingData.id);
 
     console.log('Payment initialized successfully');
 
