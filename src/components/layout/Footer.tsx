@@ -55,10 +55,8 @@ export const Footer = () => {
             <h4 className="font-bold text-lg mb-4">Popular Routes</h4>
             <ul className="space-y-3">
               {[
-                "Lagos → Abuja",
                 "Jos → Abuja",
-                "Lagos → Port Harcourt",
-                "Kano → Lagos",
+                "Abuja → Jos"
               ].map((route) => (
                 <li key={route}>
                   <span className="text-white/70 text-sm">{route}</span>
@@ -75,8 +73,8 @@ export const Footer = () => {
                 <Phone className="w-5 h-5 text-accent mt-0.5" />
                 <div>
                   <p className="text-sm text-white/70">Call us</p>
-                  <a href="tel:+2348012345678" className="font-medium hover:text-accent transition-colors">
-                    +234 801 234 5678
+                  <a href="tel:+2349036573414" className="font-medium hover:text-accent transition-colors">
+                    +234 903 657 3414
                   </a>
                 </div>
               </li>
@@ -84,8 +82,8 @@ export const Footer = () => {
                 <Mail className="w-5 h-5 text-accent mt-0.5" />
                 <div>
                   <p className="text-sm text-white/70">Email us</p>
-                  <a href="mailto:info@borixexpress.com" className="font-medium hover:text-accent transition-colors">
-                    info@borixexpress.com
+                  <a href="mailto:borixexpressltd@gmail.com" className="font-medium hover:text-accent transition-colors">
+                    borixexpressltd@gmail.com 
                   </a>
                 </div>
               </li>
@@ -93,7 +91,7 @@ export const Footer = () => {
                 <MapPin className="w-5 h-5 text-accent mt-0.5" />
                 <div>
                   <p className="text-sm text-white/70">Head Office</p>
-                  <p className="font-medium">Lagos, Nigeria</p>
+                  <p className="font-medium">Jos, Nigeria</p>
                 </div>
               </li>
             </ul>
@@ -103,7 +101,7 @@ export const Footer = () => {
         {/* Bottom Bar */}
         <div className="mt-12 pt-8 border-t border-white/10 flex flex-col md:flex-row justify-between items-center gap-4">
           <p className="text-sm text-white/60">
-            © 2024 Borix Express. All rights reserved.
+            © 2025 Borix Express. All rights reserved.
           </p>
           <div className="flex gap-6 text-sm text-white/60">
             <a href="#" className="hover:text-white transition-colors">Privacy Policy</a>
