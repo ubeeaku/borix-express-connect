@@ -212,7 +212,7 @@ const Contact = () => {
 
               <div className="bg-card rounded-2xl overflow-hidden shadow-lg h-[400px]">
                 <iframe
-                  src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d253682.45932747592!2d3.1438721!3d6.5480357!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x103b8b2ae68280c1%3A0xdc9e87a367c3d9cb!2sLagos%2C%20Nigeria!5e0!3m2!1sen!2sus!4v1699999999999!5m2!1sen!2sus"
+                  src="https://goo.gl/maps/NfUsCJq4m7yuueE5A"
                   width="100%"
                   height="100%"
                   style={{ border: 0 }}
