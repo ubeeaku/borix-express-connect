@@ -13,23 +13,23 @@ const contactInfo = [
   {
     icon: Phone,
     title: "Phone",
-    value: "+234 801 234 5678",
+    value: "+234 903 657 3414",
     description: "Mon-Sun, 6am-10pm",
-    action: "tel:+2348012345678",
+    action: "tel:+2349036573414",
   },
   {
     icon: MessageCircle,
     title: "WhatsApp",
     value: "Chat with us",
     description: "Quick responses",
-    action: "https://wa.me/2348012345678",
+    action: "https://wa.me/2349036573414",
   },
   {
     icon: Mail,
     title: "Email",
-    value: "info@borixexpress.com",
+    value: "borixexpressltd@gmail.com",
     description: "We reply within 24 hours",
-    action: "mailto:info@borixexpress.com",
+    action: "mailto:borixexpressltd@gmail.com",
   },
   {
     icon: Clock,
@@ -207,7 +207,7 @@ const Contact = () => {
                 Our Location
               </h2>
               <p className="text-muted-foreground mb-8">
-                Visit our head office in Lagos, Nigeria.
+                Visit our head office in Jos, Nigeria.
               </p>
 
               <div className="bg-card rounded-2xl overflow-hidden shadow-lg h-[400px]">
@@ -228,7 +228,7 @@ const Contact = () => {
                 <div>
                   <p className="font-semibold text-foreground">Head Office</p>
                   <p className="text-muted-foreground">
-                    123 Transport Avenue, Ikeja, Lagos, Nigeria
+                    No.47 cornerstone Kabong, Off Rukuba Road, Jos Nigeria
                   </p>
                 </div>
               </div>
