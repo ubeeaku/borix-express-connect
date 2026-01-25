@@ -7,7 +7,14 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-// Input validation schema
+// Allowed callback URL domains for security
+const ALLOWED_CALLBACK_DOMAINS = [
+  'lovable.app',
+  'lovable.dev',
+  'lovableproject.com',
+];
+
+// Input validation schema - callbackUrl removed for security (open redirect prevention)
 const InitSchema = z.object({
   email: z.string().email().max(255),
   amount: z.number().positive().max(10000000),
@@ -18,7 +25,6 @@ const InitSchema = z.object({
   time: z.string().min(1).max(20),
   passengers: z.string().regex(/^[1-5]$/, 'Passengers must be 1-5'),
   seats: z.array(z.number().min(1).max(5)).min(1).max(5),
-  callbackUrl: z.string().url().optional(),
 });
 
 serve(async (req) => {
@@ -81,7 +87,7 @@ serve(async (req) => {
       );
     }
 
-    const { email, amount, name, phone, routeId, date, time, passengers, seats, callbackUrl } = validatedInput;
+    const { email, amount, name, phone, routeId, date, time, passengers, seats } = validatedInput;
 
     // Verify the authenticated user's email matches the booking email
     if (userEmail !== email) {
@@ -150,7 +156,7 @@ serve(async (req) => {
         email,
         amount: amount * 100, // Paystack expects amount in kobo
         reference,
-        callback_url: callbackUrl || `${req.headers.get('origin')}/confirmation`,
+        callback_url: `${req.headers.get('origin') || 'https://lovable.app'}/confirmation`,
         metadata: {
           name,
           phone,
