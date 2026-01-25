@@ -39,10 +39,7 @@ export const usePaystack = () => {
 
     try {
       const { data, error: fnError } = await supabase.functions.invoke('paystack-initialize', {
-        body: {
-          ...params,
-          callbackUrl: `${window.location.origin}/confirmation`,
-        },
+        body: params,
       });
 
       if (fnError) {
