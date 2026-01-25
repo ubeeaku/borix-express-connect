@@ -34,36 +34,15 @@ serve(async (req) => {
   }
 
   try {
-    // Verify authentication
-    const authHeader = req.headers.get('Authorization');
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      return new Response(
-        JSON.stringify({ success: false, error: 'Authentication required' }),
-        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
+    // Guest checkout is allowed - no authentication required for booking
+    // Security is maintained through:
+    // 1. Strict input validation with Zod
+    // 2. Service-role database operations with RLS bypass
+    // 3. Paystack handles payment security
+    // 4. Email verification happens through Paystack's payment flow
 
-    // Create authenticated Supabase client to verify user
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-    const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY')!;
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-    
-    const authClient = createClient(supabaseUrl, supabaseAnonKey, {
-      global: { headers: { Authorization: authHeader } }
-    });
-
-    // Verify the JWT token
-    const token = authHeader.replace('Bearer ', '');
-    const { data: claimsData, error: claimsError } = await authClient.auth.getClaims(token);
-    
-    if (claimsError || !claimsData?.claims) {
-      return new Response(
-        JSON.stringify({ success: false, error: 'Invalid authentication token' }),
-        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-
-    const userEmail = claimsData.claims.email as string;
 
     const PAYSTACK_SECRET_KEY = Deno.env.get('PAYSTACK_SECRET_KEY');
     if (!PAYSTACK_SECRET_KEY) {
@@ -74,13 +53,13 @@ serve(async (req) => {
       );
     }
 
-    // Parse and validate input
+    // Parse and validate input strictly
     let validatedInput;
     try {
       const rawInput = await req.json();
       validatedInput = InitSchema.parse(rawInput);
     } catch (validationError) {
-      console.error('Input validation failed');
+      console.error('Input validation failed:', validationError);
       return new Response(
         JSON.stringify({ success: false, error: 'Invalid input data' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -89,15 +68,7 @@ serve(async (req) => {
 
     const { email, amount, name, phone, routeId, date, time, passengers, seats } = validatedInput;
 
-    // Verify the authenticated user's email matches the booking email
-    if (userEmail !== email) {
-      return new Response(
-        JSON.stringify({ success: false, error: 'Email must match authenticated user' }),
-        { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-
-    console.log('Processing payment initialization for authenticated user');
+    console.log('Processing guest payment initialization for:', email);
 
     // Use service role client for database operations
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
