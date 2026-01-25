@@ -46,7 +46,7 @@ export const Navbar = () => {
           <div className="hidden md:flex items-center gap-4">
             <a href="tel:+2349036573414" className="flex items-center gap-2 text-primary/80 hover:text-primary transition-colors">
               <Phone className="w-4 h-4" />
-              <span className="text-sm font-medium">+234 801 234 5678</span>
+              <span className="text-sm font-medium">+234 903 657 3414</span>
             </a>
             <Link to="/admin">
               <Button variant="accent" size="sm">
