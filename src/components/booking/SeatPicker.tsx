@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { User, Check } from "lucide-react";
+import { User, Check, Car } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
 
@@ -12,11 +12,33 @@ interface SeatPickerProps {
   onSeatsChange: (seats: number[]) => void;
 }
 
-// 5-seater car layout: 2 front (driver + 1), 3 back
-const SEAT_LAYOUT = [
-  { row: 1, seats: [{ number: 1, label: "1A" }, { number: 2, label: "1B" }] },
-  { row: 2, seats: [{ number: 3, label: "2A" }, { number: 4, label: "2B" }, { number: 5, label: "2C" }] },
-];
+// 5 cars available, each with 5 passenger seats
+const TOTAL_CARS = 5;
+const SEATS_PER_CAR = 5;
+
+// Seat layout per car: 1 front (beside driver), 2 middle, 2 back
+const getCarLayout = (carIndex: number) => {
+  const baseNumber = carIndex * SEATS_PER_CAR;
+  return [
+    { row: 1, label: "Front", seats: [{ number: baseNumber + 1, label: "A1" }] },
+    { row: 2, label: "Middle", seats: [{ number: baseNumber + 2, label: "B1" }, { number: baseNumber + 3, label: "B2" }] },
+    { row: 3, label: "Back", seats: [{ number: baseNumber + 4, label: "C1" }, { number: baseNumber + 5, label: "C2" }] },
+  ];
+};
+
+// Get all seats for display in selected seats summary
+const getAllSeats = () => {
+  const seats: { number: number; label: string; carIndex: number }[] = [];
+  for (let i = 0; i < TOTAL_CARS; i++) {
+    const layout = getCarLayout(i);
+    layout.forEach(row => {
+      row.seats.forEach(seat => {
+        seats.push({ ...seat, carIndex: i });
+      });
+    });
+  }
+  return seats;
+};
 
 export const SeatPicker = ({
   routeId,
@@ -86,58 +108,24 @@ export const SeatPicker = ({
         </span>
       </div>
 
-      {/* Car visualization */}
-      <div className="bg-muted rounded-2xl p-6">
-        {/* Car body */}
-        <div className="relative mx-auto max-w-xs">
-          {/* Front of car indicator */}
-          <div className="flex justify-center mb-4">
-            <div className="bg-primary/10 text-primary text-xs font-medium px-3 py-1 rounded-full">
-              Front
-            </div>
-          </div>
-
-          {/* Driver area */}
-          <div className="flex justify-between items-center mb-4 px-4">
-            <div className="w-12 h-12 rounded-lg bg-muted-foreground/20 flex items-center justify-center">
-              <span className="text-xs text-muted-foreground">Driver</span>
-            </div>
-            {/* Seat 1A */}
-            <SeatButton
-              seat={SEAT_LAYOUT[0].seats[0]}
-              status={getSeatStatus(1)}
-              onClick={() => handleSeatClick(1)}
-              disabled={isLoading}
-            />
-          </div>
-
-          {/* Divider */}
-          <div className="h-4 border-t border-dashed border-border" />
-
-          {/* Back row */}
-          <div className="flex justify-center gap-2 mt-4">
-            {SEAT_LAYOUT[1].seats.map((seat) => (
-              <SeatButton
-                key={seat.number}
-                seat={seat}
-                status={getSeatStatus(seat.number)}
-                onClick={() => handleSeatClick(seat.number)}
-                disabled={isLoading}
-              />
-            ))}
-          </div>
-
-          {/* Back of car indicator */}
-          <div className="flex justify-center mt-4">
-            <div className="bg-muted-foreground/10 text-muted-foreground text-xs font-medium px-3 py-1 rounded-full">
-              Back
-            </div>
-          </div>
-        </div>
+      {/* Cars grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        {Array.from({ length: TOTAL_CARS }, (_, carIndex) => (
+          <CarVisualization
+            key={carIndex}
+            carIndex={carIndex}
+            layout={getCarLayout(carIndex)}
+            bookedSeats={bookedSeats}
+            selectedSeats={selectedSeats}
+            onSeatClick={handleSeatClick}
+            isLoading={isLoading}
+            getSeatStatus={getSeatStatus}
+          />
+        ))}
       </div>
 
       {/* Legend */}
-      <div className="flex justify-center gap-6 text-sm">
+      <div className="flex justify-center gap-6 text-sm flex-wrap">
         <div className="flex items-center gap-2">
           <div className="w-6 h-6 rounded-lg bg-card border-2 border-border" />
           <span className="text-muted-foreground">Available</span>
@@ -160,10 +148,10 @@ export const SeatPicker = ({
             {selectedSeats
               .sort((a, b) => a - b)
               .map((s) => {
-                const seat = [...SEAT_LAYOUT[0].seats, ...SEAT_LAYOUT[1].seats].find(
-                  (st) => st.number === s
-                );
-                return seat?.label;
+                const allSeats = getAllSeats();
+                const seat = allSeats.find((st) => st.number === s);
+                if (!seat) return `Seat ${s}`;
+                return `Car ${seat.carIndex + 1} - ${seat.label}`;
               })
               .join(", ")}
           </p>
@@ -173,22 +161,115 @@ export const SeatPicker = ({
   );
 };
 
+interface CarVisualizationProps {
+  carIndex: number;
+  layout: { row: number; label: string; seats: { number: number; label: string }[] }[];
+  bookedSeats: number[];
+  selectedSeats: number[];
+  onSeatClick: (seatNumber: number) => void;
+  isLoading: boolean;
+  getSeatStatus: (seatNumber: number) => "available" | "selected" | "booked";
+}
+
+const CarVisualization = ({
+  carIndex,
+  layout,
+  onSeatClick,
+  isLoading,
+  getSeatStatus,
+}: CarVisualizationProps) => {
+  const availableCount = layout
+    .flatMap((r) => r.seats)
+    .filter((s) => getSeatStatus(s.number) === "available").length;
+
+  return (
+    <div className="bg-muted rounded-2xl p-4">
+      {/* Car header */}
+      <div className="flex items-center justify-between mb-3">
+        <div className="flex items-center gap-2">
+          <Car className="w-4 h-4 text-primary" />
+          <span className="font-medium text-sm">Car {carIndex + 1}</span>
+        </div>
+        <span className="text-xs text-muted-foreground">
+          {availableCount} available
+        </span>
+      </div>
+
+      {/* Car body */}
+      <div className="relative mx-auto max-w-[140px]">
+        {/* Driver area + Front seat */}
+        <div className="flex justify-between items-center mb-2 px-2">
+          <div className="w-10 h-10 rounded-lg bg-muted-foreground/20 flex items-center justify-center">
+            <span className="text-[10px] text-muted-foreground">Driver</span>
+          </div>
+          {layout[0].seats.map((seat) => (
+            <SeatButton
+              key={seat.number}
+              seat={seat}
+              status={getSeatStatus(seat.number)}
+              onClick={() => onSeatClick(seat.number)}
+              disabled={isLoading}
+              compact
+            />
+          ))}
+        </div>
+
+        {/* Divider */}
+        <div className="h-2 border-t border-dashed border-border" />
+
+        {/* Middle row - 2 seats */}
+        <div className="flex justify-center gap-2 my-2">
+          {layout[1].seats.map((seat) => (
+            <SeatButton
+              key={seat.number}
+              seat={seat}
+              status={getSeatStatus(seat.number)}
+              onClick={() => onSeatClick(seat.number)}
+              disabled={isLoading}
+              compact
+            />
+          ))}
+        </div>
+
+        {/* Divider */}
+        <div className="h-2 border-t border-dashed border-border" />
+
+        {/* Back row - 2 seats */}
+        <div className="flex justify-center gap-2 mt-2">
+          {layout[2].seats.map((seat) => (
+            <SeatButton
+              key={seat.number}
+              seat={seat}
+              status={getSeatStatus(seat.number)}
+              onClick={() => onSeatClick(seat.number)}
+              disabled={isLoading}
+              compact
+            />
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+};
+
 interface SeatButtonProps {
   seat: { number: number; label: string };
   status: "available" | "selected" | "booked";
   onClick: () => void;
   disabled?: boolean;
+  compact?: boolean;
 }
 
-const SeatButton = ({ seat, status, onClick, disabled }: SeatButtonProps) => {
+const SeatButton = ({ seat, status, onClick, disabled, compact }: SeatButtonProps) => {
   return (
     <button
       type="button"
       onClick={onClick}
       disabled={disabled || status === "booked"}
       className={cn(
-        "w-14 h-14 rounded-xl flex flex-col items-center justify-center transition-all",
-        "border-2 font-medium text-sm",
+        "rounded-xl flex flex-col items-center justify-center transition-all",
+        "border-2 font-medium",
+        compact ? "w-10 h-10 text-[10px]" : "w-14 h-14 text-sm",
         status === "available" &&
           "bg-card border-border hover:border-accent hover:bg-accent/10 cursor-pointer",
         status === "selected" &&
@@ -198,11 +279,11 @@ const SeatButton = ({ seat, status, onClick, disabled }: SeatButtonProps) => {
       )}
     >
       {status === "selected" ? (
-        <Check className="w-5 h-5" />
+        <Check className={cn(compact ? "w-3 h-3" : "w-5 h-5")} />
       ) : (
-        <User className="w-4 h-4 opacity-50" />
+        <User className={cn(compact ? "w-3 h-3" : "w-4 h-4", "opacity-50")} />
       )}
-      <span className="text-xs mt-0.5">{seat.label}</span>
+      <span className={cn("mt-0.5", compact ? "text-[8px]" : "text-xs")}>{seat.label}</span>
     </button>
   );
 };
