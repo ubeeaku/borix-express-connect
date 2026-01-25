@@ -18,6 +18,7 @@ import {
   TrendingDown,
   Bell,
   Loader2,
+  ClipboardList,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAdminAuth } from "@/hooks/useAdminAuth";
@@ -29,6 +30,7 @@ const sidebarItems = [
   { name: "Vehicles", icon: Truck, path: "/admin/vehicles" },
   { name: "Drivers", icon: Users, path: "/admin/drivers" },
   { name: "Bookings", icon: Ticket, path: "/admin/bookings" },
+  { name: "Trip Manifest", icon: ClipboardList, path: "/admin/manifest" },
   { name: "Payments", icon: CreditCard, path: "/admin/payments" },
   { name: "Settings", icon: Settings, path: "/admin/settings" },
 ];
