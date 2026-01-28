@@ -19,37 +19,9 @@ serve(async (req) => {
   }
 
   try {
-    // Verify authentication
-    const authHeader = req.headers.get('Authorization');
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      return new Response(
-        JSON.stringify({ success: false, error: 'Authentication required' }),
-        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-
-    // Create authenticated Supabase client to verify user
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-    const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY')!;
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     
-    const authClient = createClient(supabaseUrl, supabaseAnonKey, {
-      global: { headers: { Authorization: authHeader } }
-    });
-
-    // Verify the JWT token
-    const token = authHeader.replace('Bearer ', '');
-    const { data: claimsData, error: claimsError } = await authClient.auth.getClaims(token);
-    
-    if (claimsError || !claimsData?.claims) {
-      return new Response(
-        JSON.stringify({ success: false, error: 'Invalid authentication token' }),
-        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-
-    const userEmail = claimsData.claims.email as string;
-
     const PAYSTACK_SECRET_KEY = Deno.env.get('PAYSTACK_SECRET_KEY');
     if (!PAYSTACK_SECRET_KEY) {
       console.error('Payment configuration error');
@@ -76,32 +48,8 @@ serve(async (req) => {
 
     console.log('Processing payment verification');
 
-    // Use service role client for database operations
-    const supabase = createClient(supabaseUrl, supabaseServiceKey);
-
-    // First, verify the booking exists and belongs to the authenticated user
-    const { data: existingBooking, error: fetchError } = await supabase
-      .from('bookings')
-      .select('id, passenger_email')
-      .eq('booking_reference', reference)
-      .single();
-
-    if (fetchError || !existingBooking) {
-      return new Response(
-        JSON.stringify({ success: false, error: 'Booking not found' }),
-        { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-
-    // Verify the booking belongs to the authenticated user
-    if (existingBooking.passenger_email !== userEmail) {
-      return new Response(
-        JSON.stringify({ success: false, error: 'Unauthorized access to booking' }),
-        { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-
-    // Verify transaction with Paystack
+    // SECURITY: Verify the transaction with Paystack FIRST
+    // This proves the caller has a valid reference that went through Paystack
     const paystackResponse = await fetch(`https://api.paystack.co/transaction/verify/${encodeURIComponent(reference)}`, {
       method: 'GET',
       headers: {
@@ -111,15 +59,28 @@ serve(async (req) => {
 
     const paystackData = await paystackResponse.json();
 
-    if (!paystackData.status) {
-      console.error('Payment verification failed');
+    if (!paystackData.status || !paystackData.data) {
+      console.error('Payment verification failed - invalid transaction');
       return new Response(
         JSON.stringify({ success: false, error: 'Unable to verify payment' }),
-        { status: 502, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    // Determine payment status
+    // Only proceed if Paystack confirms this is a valid transaction
+    // This prevents random reference guessing attacks
+    if (!['success', 'failed', 'pending'].includes(paystackData.data.status)) {
+      console.error('Payment verification failed - unknown status');
+      return new Response(
+        JSON.stringify({ success: false, error: 'Unable to verify payment status' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Use service role client for database operations
+    const supabase = createClient(supabaseUrl, supabaseServiceKey);
+
+    // Determine payment status from Paystack
     let paymentStatus: 'completed' | 'failed' | 'pending' = 'pending';
     if (paystackData.data.status === 'success') {
       paymentStatus = 'completed';
@@ -128,11 +89,11 @@ serve(async (req) => {
     }
 
     // Update booking status and retrieve minimal booking info
+    // Only update if booking exists with this reference
     const { data: booking, error: updateError } = await supabase
       .from('bookings')
       .update({ payment_status: paymentStatus })
       .eq('booking_reference', reference)
-      .eq('passenger_email', userEmail) // Extra security: only update if email matches
       .select(`
         booking_reference,
         passenger_name,
@@ -146,10 +107,10 @@ serve(async (req) => {
       .single();
 
     if (updateError || !booking) {
-      console.error('Booking update failed');
+      console.error('Booking not found for reference');
       return new Response(
-        JSON.stringify({ success: false, error: 'Unable to update booking' }),
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        JSON.stringify({ success: false, error: 'Booking not found' }),
+        { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
@@ -159,22 +120,26 @@ serve(async (req) => {
       .select('origin, destination')
       .eq('id', booking.route_id)
       .single();
-    console.log('Payment verification completed');
+
+    console.log('Payment verification completed successfully');
 
     // Return only minimal, non-sensitive booking data
+    // Note: No email, phone, or next-of-kin details are exposed
     return new Response(
       JSON.stringify({
         success: true,
         status: paymentStatus,
         booking: {
-          reference: booking.booking_reference,
-          passengerName: booking.passenger_name,
-          travelDate: booking.travel_date,
-          departureTime: booking.departure_time,
-          seats: booking.number_of_seats,
-          amount: booking.total_amount,
-          origin: routeData?.origin,
-          destination: routeData?.destination,
+          booking_reference: booking.booking_reference,
+          passenger_name: booking.passenger_name,
+          travel_date: booking.travel_date,
+          departure_time: booking.departure_time,
+          number_of_seats: booking.number_of_seats,
+          total_amount: booking.total_amount,
+          routes: {
+            origin: routeData?.origin,
+            destination: routeData?.destination,
+          },
         },
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
