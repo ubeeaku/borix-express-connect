@@ -49,6 +49,8 @@ const Booking = () => {
     name: "",
     email: "",
     phone: "",
+    nextOfKinName: "",
+    nextOfKinPhone: "",
   });
 
   // Fetch routes from database
@@ -99,10 +101,10 @@ const Booking = () => {
       }
     }
     if (currentStep === 3) {
-      if (!formData.name || !formData.email || !formData.phone) {
+      if (!formData.name || !formData.email || !formData.phone || !formData.nextOfKinName || !formData.nextOfKinPhone) {
         toast({
           title: "Please fill all fields",
-          description: "Enter your name, email, and phone number to continue.",
+          description: "Enter all passenger and next of kin details to continue.",
           variant: "destructive",
         });
         return;
@@ -126,6 +128,8 @@ const Booking = () => {
       time: formData.time,
       passengers: formData.passengers,
       seats: selectedSeats,
+      nextOfKinName: formData.nextOfKinName,
+      nextOfKinPhone: formData.nextOfKinPhone,
     });
 
     if (result.success && result.authorization_url) {
@@ -334,6 +338,34 @@ const Booking = () => {
                           onChange={(e) => handleInputChange("phone", e.target.value)}
                           className="h-12 mt-1"
                         />
+                      </div>
+                    </div>
+
+                    <div className="pt-4 border-t border-border">
+                      <h3 className="text-lg font-semibold text-foreground mb-4">Next of Kin Details</h3>
+                      <div className="space-y-4">
+                        <div>
+                          <Label htmlFor="nextOfKinName">Next of Kin Name</Label>
+                          <Input
+                            id="nextOfKinName"
+                            placeholder="Enter next of kin's full name"
+                            value={formData.nextOfKinName}
+                            onChange={(e) => handleInputChange("nextOfKinName", e.target.value)}
+                            className="h-12 mt-1"
+                          />
+                        </div>
+
+                        <div>
+                          <Label htmlFor="nextOfKinPhone">Next of Kin Phone Number</Label>
+                          <Input
+                            id="nextOfKinPhone"
+                            type="tel"
+                            placeholder="Enter next of kin's phone number"
+                            value={formData.nextOfKinPhone}
+                            onChange={(e) => handleInputChange("nextOfKinPhone", e.target.value)}
+                            className="h-12 mt-1"
+                          />
+                        </div>
                       </div>
                     </div>
                   </div>

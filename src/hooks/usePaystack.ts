@@ -11,6 +11,8 @@ interface PaystackInitParams {
   time: string;
   passengers: string;
   seats: number[];
+  nextOfKinName: string;
+  nextOfKinPhone: string;
 }
 
 interface PaystackResponse {
