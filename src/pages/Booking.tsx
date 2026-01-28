@@ -18,6 +18,16 @@ import { toast } from "@/hooks/use-toast";
 import { usePaystack } from "@/hooks/usePaystack";
 import { SeatPicker } from "@/components/booking/SeatPicker";
 import { supabase } from "@/integrations/supabase/client";
+import { z } from "zod";
+
+// Validation schema matching edge function requirements
+const passengerSchema = z.object({
+  name: z.string().min(2, "Name must be at least 2 characters").max(100, "Name must be less than 100 characters"),
+  email: z.string().email("Please enter a valid email address").max(255, "Email is too long"),
+  phone: z.string().regex(/^\+?[0-9]{10,15}$/, "Phone must be 10-15 digits (optionally starting with +)"),
+  nextOfKinName: z.string().min(2, "Next of kin name must be at least 2 characters").max(100, "Name is too long"),
+  nextOfKinPhone: z.string().regex(/^\+?[0-9]{10,15}$/, "Next of kin phone must be 10-15 digits"),
+});
 
 interface Route {
   id: string;
@@ -101,10 +111,20 @@ const Booking = () => {
       }
     }
     if (currentStep === 3) {
-      if (!formData.name || !formData.email || !formData.phone || !formData.nextOfKinName || !formData.nextOfKinPhone) {
+      // Validate passenger details using Zod schema
+      const validationResult = passengerSchema.safeParse({
+        name: formData.name,
+        email: formData.email,
+        phone: formData.phone,
+        nextOfKinName: formData.nextOfKinName,
+        nextOfKinPhone: formData.nextOfKinPhone,
+      });
+      
+      if (!validationResult.success) {
+        const firstError = validationResult.error.errors[0];
         toast({
-          title: "Please fill all fields",
-          description: "Enter all passenger and next of kin details to continue.",
+          title: "Invalid input",
+          description: firstError?.message || "Please check your input and try again.",
           variant: "destructive",
         });
         return;

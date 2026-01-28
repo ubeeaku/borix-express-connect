@@ -60,8 +60,9 @@ export const SeatPicker = ({
 
       setIsLoading(true);
       try {
+        // Use the secure view that hides booking_id from public access
         const { data, error } = await supabase
-          .from("booked_seats")
+          .from("available_seats_view")
           .select("seat_number")
           .eq("route_id", routeId)
           .eq("travel_date", date)
