@@ -165,7 +165,35 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      available_seats_view: {
+        Row: {
+          departure_time: string | null
+          route_id: string | null
+          seat_number: number | null
+          travel_date: string | null
+        }
+        Insert: {
+          departure_time?: string | null
+          route_id?: string | null
+          seat_number?: number | null
+          travel_date?: string | null
+        }
+        Update: {
+          departure_time?: string | null
+          route_id?: string | null
+          seat_number?: number | null
+          travel_date?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "booked_seats_route_id_fkey"
+            columns: ["route_id"]
+            isOneToOne: false
+            referencedRelation: "routes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Functions: {
       has_role: {
