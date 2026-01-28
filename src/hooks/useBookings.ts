@@ -72,9 +72,16 @@ export const useBookings = () => {
       }
 
       if (filter.search) {
-        query = query.or(
-          `booking_reference.ilike.%${filter.search}%,passenger_name.ilike.%${filter.search}%,passenger_email.ilike.%${filter.search}%`
-        );
+        // Sanitize search input: remove PostgREST special characters and limit length
+        const sanitizedSearch = filter.search
+          .replace(/[,()]/g, '') // Remove PostgREST operators
+          .slice(0, 100); // Limit length
+        
+        if (sanitizedSearch.trim()) {
+          query = query.or(
+            `booking_reference.ilike.%${sanitizedSearch}%,passenger_name.ilike.%${sanitizedSearch}%,passenger_email.ilike.%${sanitizedSearch}%`
+          );
+        }
       }
 
       const { data, error: fetchError } = await query;

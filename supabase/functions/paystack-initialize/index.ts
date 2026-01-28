@@ -173,6 +173,19 @@ serve(async (req) => {
     }
 
     // Step 3: Initialize Paystack ONLY after seats are successfully reserved
+    // SECURITY FIX: Validate origin against allowed domains to prevent open redirect
+    const requestOrigin = req.headers.get('origin') || '';
+    const isAllowedOrigin = ALLOWED_CALLBACK_DOMAINS.some(domain => {
+      try {
+        if (!requestOrigin) return false;
+        const url = new URL(requestOrigin);
+        return url.hostname === domain || url.hostname.endsWith(`.${domain}`);
+      } catch {
+        return false;
+      }
+    });
+    const safeCallbackOrigin = isAllowedOrigin ? requestOrigin : 'https://lovable.app';
+
     const paystackResponse = await fetch('https://api.paystack.co/transaction/initialize', {
       method: 'POST',
       headers: {
@@ -183,7 +196,7 @@ serve(async (req) => {
         email,
         amount: amount * 100, // Paystack expects amount in kobo
         reference,
-        callback_url: `${req.headers.get('origin') || 'https://lovable.app'}/confirmation`,
+        callback_url: `${safeCallbackOrigin}/confirmation`,
         metadata: {
           name,
           phone,

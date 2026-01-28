@@ -10,31 +10,20 @@ interface AdminAuthState {
   isLoading: boolean;
 }
 
-// Helper function to check admin role
+// Helper function to check admin role using server-side RPC only
 const checkIsAdmin = async (userId: string): Promise<boolean> => {
   try {
-    // Try RPC call first (will work after migration is applied)
-    const { data, error } = await (supabase.rpc as any)('is_admin', { _user_id: userId });
+    // Use RPC call for server-side validation - fail closed if unavailable
+    const { data, error } = await supabase.rpc('is_admin', { _user_id: userId });
     
-    if (!error && data === true) {
-      return true;
+    if (error) {
+      console.error('Admin check failed:', error.message);
+      return false; // Fail closed - deny access if check fails
     }
     
-    // Fallback: try direct table query
-    const { data: roleData, error: roleError } = await (supabase as any)
-      .from('user_roles')
-      .select('role')
-      .eq('user_id', userId)
-      .eq('role', 'admin')
-      .single();
-    
-    if (!roleError && roleData?.role === 'admin') {
-      return true;
-    }
-    
-    return false;
+    return data === true;
   } catch {
-    return false;
+    return false; // Fail closed on any error
   }
 };
 
