@@ -24,7 +24,9 @@ const InitSchema = z.object({
   date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Invalid date format'),
   time: z.string().min(1).max(20),
   passengers: z.string().regex(/^[1-5]$/, 'Passengers must be 1-5'),
-  seats: z.array(z.number().min(1).max(5)).min(1).max(5),
+  seats: z.array(z.number().min(1).max(25)).min(1).max(25),
+  nextOfKinName: z.string().min(2).max(100),
+  nextOfKinPhone: z.string().regex(/^\+?[0-9]{10,15}$/, 'Invalid phone number format'),
 });
 
 serve(async (req) => {
@@ -66,7 +68,7 @@ serve(async (req) => {
       );
     }
 
-    const { email, amount, name, phone, routeId, date, time, passengers, seats } = validatedInput;
+    const { email, amount, name, phone, routeId, date, time, passengers, seats, nextOfKinName, nextOfKinPhone } = validatedInput;
 
     console.log('Processing guest payment initialization for:', email);
 
@@ -132,7 +134,9 @@ serve(async (req) => {
         departure_time: time,
         number_of_seats: parseInt(passengers),
         total_amount: amount,
-        payment_status: 'reserved', // Use 'reserved' until payment is initialized
+        payment_status: 'reserved',
+        next_of_kin_name: nextOfKinName,
+        next_of_kin_phone: nextOfKinPhone,
       })
       .select('id')
       .single();

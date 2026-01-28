@@ -65,6 +65,8 @@ export type Database = {
           created_at: string | null
           departure_time: string
           id: string
+          next_of_kin_name: string | null
+          next_of_kin_phone: string | null
           number_of_seats: number
           passenger_email: string
           passenger_name: string
@@ -79,6 +81,8 @@ export type Database = {
           created_at?: string | null
           departure_time: string
           id?: string
+          next_of_kin_name?: string | null
+          next_of_kin_phone?: string | null
           number_of_seats: number
           passenger_email: string
           passenger_name: string
@@ -93,6 +97,8 @@ export type Database = {
           created_at?: string | null
           departure_time?: string
           id?: string
+          next_of_kin_name?: string | null
+          next_of_kin_phone?: string | null
           number_of_seats?: number
           passenger_email?: string
           passenger_name?: string

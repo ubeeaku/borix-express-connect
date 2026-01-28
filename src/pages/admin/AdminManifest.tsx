@@ -28,6 +28,8 @@ interface ManifestPassenger {
   passenger_phone: string;
   payment_status: string;
   seat_number: number;
+  next_of_kin_name: string | null;
+  next_of_kin_phone: string | null;
 }
 
 const DEPARTURE_TIMES = ["6:00 AM", "8:00 AM", "10:00 AM", "12:00 PM", "2:00 PM", "4:00 PM"];
@@ -93,7 +95,9 @@ const AdminManifest = () => {
               passenger_name,
               passenger_email,
               passenger_phone,
-              payment_status
+              payment_status,
+              next_of_kin_name,
+              next_of_kin_phone
             )
           `)
           .eq("route_id", selectedRoute)
@@ -114,6 +118,8 @@ const AdminManifest = () => {
             passenger_phone: seat.booking.passenger_phone,
             payment_status: seat.booking.payment_status,
             seat_number: seat.seat_number,
+            next_of_kin_name: seat.booking.next_of_kin_name,
+            next_of_kin_phone: seat.booking.next_of_kin_phone,
           }));
 
         setPassengers(manifestData);
@@ -134,7 +140,7 @@ const AdminManifest = () => {
   const handleExportCSV = () => {
     if (!passengers.length) return;
     
-    const headers = ["Seat", "Name", "Phone", "Email", "Reference", "Status"];
+    const headers = ["Seat", "Name", "Phone", "Email", "Reference", "Status", "Next of Kin", "Next of Kin Phone"];
     const rows = passengers.map(p => [
       p.seat_number,
       p.passenger_name,
@@ -142,6 +148,8 @@ const AdminManifest = () => {
       p.passenger_email,
       p.booking_reference,
       p.payment_status,
+      p.next_of_kin_name || "",
+      p.next_of_kin_phone || "",
     ]);
     
     const csv = [headers, ...rows].map(row => row.join(",")).join("\n");
@@ -323,6 +331,7 @@ const AdminManifest = () => {
                       <TableHead>Passenger Name</TableHead>
                       <TableHead>Phone</TableHead>
                       <TableHead className="hidden md:table-cell">Email</TableHead>
+                      <TableHead>Next of Kin</TableHead>
                       <TableHead className="hidden md:table-cell">Reference</TableHead>
                       <TableHead>Status</TableHead>
                     </TableRow>
@@ -341,6 +350,12 @@ const AdminManifest = () => {
                         <TableCell>{passenger.passenger_phone}</TableCell>
                         <TableCell className="hidden md:table-cell">
                           {passenger.passenger_email}
+                        </TableCell>
+                        <TableCell>
+                          <div>
+                            <p className="font-medium">{passenger.next_of_kin_name || "-"}</p>
+                            <p className="text-sm text-muted-foreground">{passenger.next_of_kin_phone || ""}</p>
+                          </div>
                         </TableCell>
                         <TableCell className="hidden md:table-cell font-mono text-sm">
                           {passenger.booking_reference}
