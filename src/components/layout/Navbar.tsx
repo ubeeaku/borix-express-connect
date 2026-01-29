@@ -3,7 +3,7 @@ import { Link, useLocation } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { Menu, X, Phone } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import borixLogo from "@/assets/borix-logo.png";
+import borixLogo from "@/assets/borix-logo-new.png";
 
 const navLinks = [
   { name: "Home", path: "/" },
@@ -17,7 +17,7 @@ export const Navbar = () => {
   const location = useLocation();
 
   return (
-    <nav className="fixed top-0 left-0 right-0 z-50 bg-white backdrop-blur-md border-b border-border shadow-sm">
+    <nav className="fixed top-0 left-0 right-0 z-50 bg-[hsl(220_30%_96%)] backdrop-blur-md border-b border-border shadow-sm">
       <div className="container-custom">
         <div className="flex items-center justify-between h-16 md:h-20">
           {/* Logo */}
@@ -72,7 +72,7 @@ export const Navbar = () => {
             initial={{ opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: "auto" }}
             exit={{ opacity: 0, height: 0 }}
-            className="md:hidden bg-white border-t border-border"
+            className="md:hidden bg-[hsl(220_30%_96%)] border-t border-border"
           >
             <div className="container-custom py-4 space-y-4">
               {navLinks.map((link) => (
