@@ -72,14 +72,18 @@ export const useBookings = () => {
       }
 
       if (filter.search) {
-        // Sanitize search input: remove PostgREST special characters and limit length
+        // Sanitize search input: remove all PostgREST special characters and SQL wildcards
         const sanitizedSearch = filter.search
-          .replace(/[,()]/g, '') // Remove PostgREST operators
-          .slice(0, 100); // Limit length
+          .replace(/[,().%_\\*]/g, '') // Remove PostgREST operators and SQL wildcards
+          .replace(/[^\w\s@\-]/g, '') // Only allow alphanumeric, spaces, @, and hyphens
+          .trim()
+          .slice(0, 50); // Limit length
         
-        if (sanitizedSearch.trim()) {
+        if (sanitizedSearch.length >= 2) {
+          // Use escaped wildcards for ILIKE pattern matching
+          const escapedSearch = sanitizedSearch.replace(/[%_]/g, '\\$&');
           query = query.or(
-            `booking_reference.ilike.%${sanitizedSearch}%,passenger_name.ilike.%${sanitizedSearch}%,passenger_email.ilike.%${sanitizedSearch}%`
+            `booking_reference.ilike.%${escapedSearch}%,passenger_name.ilike.%${escapedSearch}%,passenger_email.ilike.%${escapedSearch}%`
           );
         }
       }
