@@ -17,24 +17,24 @@ export const Navbar = () => {
   const location = useLocation();
 
   return (
-    <nav className="fixed top-0 left-0 right-0 z-50 bg-[hsl(220_30%_96%)] backdrop-blur-md border-b border-border shadow-sm">
+    <nav className="fixed top-0 left-0 right-0 z-50 bg-primary shadow-lg">
       <div className="container-custom">
-        <div className="flex items-center justify-between h-16 md:h-20">
+        <div className="flex items-center justify-between h-20 md:h-24">
           {/* Logo */}
           <Link to="/" className="flex items-center">
-            <img src={borixLogo} alt="Borix Express" className="h-14 md:h-16 w-auto" />
+            <img src={borixLogo} alt="Borix Express" className="h-16 md:h-20 w-auto" />
           </Link>
 
           {/* Desktop Navigation */}
-          <div className="hidden md:flex items-center gap-8">
+          <div className="hidden md:flex items-center gap-10">
             {navLinks.map((link) => (
               <Link
                 key={link.path}
                 to={link.path}
-                className={`text-sm font-medium transition-colors duration-200 ${
+                className={`text-sm font-semibold uppercase tracking-wide transition-colors duration-200 ${
                   location.pathname === link.path
                     ? "text-accent"
-                    : "text-primary/80 hover:text-primary"
+                    : "text-white/90 hover:text-accent"
                 }`}
               >
                 {link.name}
@@ -43,13 +43,13 @@ export const Navbar = () => {
           </div>
 
           {/* Desktop CTA */}
-          <div className="hidden md:flex items-center gap-4">
-            <a href="tel:+2349036573414" className="flex items-center gap-2 text-primary/80 hover:text-primary transition-colors">
+          <div className="hidden md:flex items-center gap-5">
+            <a href="tel:+2349036573414" className="flex items-center gap-2 text-white/80 hover:text-accent transition-colors">
               <Phone className="w-4 h-4" />
               <span className="text-sm font-medium">+234 903 657 3414</span>
             </a>
             <Link to="/admin">
-              <Button variant="accent" size="sm">
+              <Button variant="accent" size="sm" className="font-semibold">
                 Admin
               </Button>
             </Link>
@@ -58,7 +58,7 @@ export const Navbar = () => {
           {/* Mobile Menu Button */}
           <button
             onClick={() => setIsOpen(!isOpen)}
-            className="md:hidden p-2 text-primary"
+            className="md:hidden p-2 text-white"
           >
             {isOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
           </button>
@@ -72,26 +72,26 @@ export const Navbar = () => {
             initial={{ opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: "auto" }}
             exit={{ opacity: 0, height: 0 }}
-            className="md:hidden bg-[hsl(220_30%_96%)] border-t border-border"
+            className="md:hidden bg-primary border-t border-white/10"
           >
-            <div className="container-custom py-4 space-y-4">
+            <div className="container-custom py-6 space-y-4">
               {navLinks.map((link) => (
                 <Link
                   key={link.path}
                   to={link.path}
                   onClick={() => setIsOpen(false)}
-                  className={`block py-2 text-base font-medium ${
+                  className={`block py-2 text-base font-semibold uppercase tracking-wide ${
                     location.pathname === link.path
                       ? "text-accent"
-                      : "text-primary/80"
+                      : "text-white/80"
                   }`}
                 >
                   {link.name}
                 </Link>
               ))}
-              <div className="pt-4 border-t border-border">
+              <div className="pt-4 border-t border-white/10">
                 <Link to="/admin" onClick={() => setIsOpen(false)}>
-                  <Button variant="accent" className="w-full">
+                  <Button variant="accent" className="w-full font-semibold">
                     Admin Dashboard
                   </Button>
                 </Link>
