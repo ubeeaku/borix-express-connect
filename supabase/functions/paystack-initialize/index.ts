@@ -2,17 +2,38 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-};
-
-// Allowed callback URL domains for security
-const ALLOWED_CALLBACK_DOMAINS = [
+// Allowed origins for CORS
+const ALLOWED_ORIGINS = [
   'lovable.app',
   'lovable.dev',
   'lovableproject.com',
 ];
+
+// Dynamic CORS based on allowed origins
+function getCorsHeaders(req: Request): Record<string, string> {
+  const origin = req.headers.get('origin') || '';
+  let allowedOrigin = 'https://lovable.app'; // Default fallback
+  
+  try {
+    if (origin) {
+      const url = new URL(origin);
+      const isAllowed = ALLOWED_ORIGINS.some(domain => 
+        url.hostname === domain || url.hostname.endsWith(`.${domain}`)
+      );
+      if (isAllowed) {
+        allowedOrigin = origin;
+      }
+    }
+  } catch {
+    // Invalid origin URL, use default
+  }
+  
+  return {
+    'Access-Control-Allow-Origin': allowedOrigin,
+    'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+    'Access-Control-Allow-Methods': 'POST, OPTIONS',
+  };
+}
 
 // Input validation schema - callbackUrl removed for security (open redirect prevention)
 const InitSchema = z.object({
@@ -30,6 +51,8 @@ const InitSchema = z.object({
 });
 
 serve(async (req) => {
+  const corsHeaders = getCorsHeaders(req);
+  
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -175,7 +198,7 @@ serve(async (req) => {
     // Step 3: Initialize Paystack ONLY after seats are successfully reserved
     // SECURITY FIX: Validate origin against allowed domains to prevent open redirect
     const requestOrigin = req.headers.get('origin') || '';
-    const isAllowedOrigin = ALLOWED_CALLBACK_DOMAINS.some(domain => {
+    const isAllowedOrigin = ALLOWED_ORIGINS.some(domain => {
       try {
         if (!requestOrigin) return false;
         const url = new URL(requestOrigin);
@@ -251,7 +274,7 @@ serve(async (req) => {
     console.error('Payment processing error');
     return new Response(
       JSON.stringify({ success: false, error: 'Unable to process request' }),
-      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      { status: 500, headers: { ...getCorsHeaders(req), 'Content-Type': 'application/json' } }
     );
   }
 });
