@@ -1,6 +1,6 @@
 import { Link } from "react-router-dom";
 import { Phone, Mail, MapPin, Facebook, Twitter, Instagram } from "lucide-react";
-import borixLogo from "@/assets/borix-logo.png";
+import borixLogo from "@/assets/borix-logo-new.png";
 
 export const Footer = () => {
   return (
