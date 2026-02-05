@@ -144,31 +144,73 @@ const Booking = () => {
   const handlePayment = async () => {
     if (!selectedRoute) return;
 
-    const result = await initializePayment({
-      email: formData.email,
-      amount: totalPrice,
-      name: formData.name,
-      phone: formData.phone,
-      routeId: formData.routeId,
-      date: formData.date,
-      time: formData.time,
-      passengers: formData.passengers,
-      seats: selectedSeats,
-      nextOfKinName: formData.nextOfKinName,
-      nextOfKinPhone: formData.nextOfKinPhone,
-    });
+    if (paymentMethod === 'wallet') {
+      if (!user) {
+        toast({
+          title: "Login Required",
+          description: "Please log in to pay with your wallet.",
+          variant: "destructive",
+        });
+        return;
+      }
 
-    if (result.success && result.authorization_url) {
-      sessionStorage.setItem('paystack_reference', result.reference || '');
-      window.location.href = result.authorization_url;
-    } else {
-      toast({
-        title: "Payment Failed",
-        description: result.error || "Could not initialize payment. Please try again.",
-        variant: "destructive",
+      const result = await payWithWallet({
+        email: formData.email,
+        amount: totalPrice,
+        name: formData.name,
+        phone: formData.phone,
+        routeId: formData.routeId,
+        date: formData.date,
+        time: formData.time,
+        passengers: formData.passengers,
+        seats: selectedSeats,
+        nextOfKinName: formData.nextOfKinName,
+        nextOfKinPhone: formData.nextOfKinPhone,
       });
+
+      if (result.success) {
+        toast({
+          title: "Payment Successful",
+          description: `Booking confirmed! Reference: ${result.reference}`,
+        });
+        navigate(`/confirmation?reference=${result.reference}`);
+      } else {
+        toast({
+          title: "Payment Failed",
+          description: result.error || "Could not process wallet payment.",
+          variant: "destructive",
+        });
+      }
+    } else {
+      const result = await initializePayment({
+        email: formData.email,
+        amount: totalPrice,
+        name: formData.name,
+        phone: formData.phone,
+        routeId: formData.routeId,
+        date: formData.date,
+        time: formData.time,
+        passengers: formData.passengers,
+        seats: selectedSeats,
+        nextOfKinName: formData.nextOfKinName,
+        nextOfKinPhone: formData.nextOfKinPhone,
+      });
+
+      if (result.success && result.authorization_url) {
+        sessionStorage.setItem('paystack_reference', result.reference || '');
+        window.location.href = result.authorization_url;
+      } else {
+        toast({
+          title: "Payment Failed",
+          description: result.error || "Could not initialize payment. Please try again.",
+          variant: "destructive",
+        });
+      }
     }
   };
+
+  const walletBalance = wallet?.balance ? wallet.balance / 100 : 0;
+  const canPayWithWallet = user && walletBalance >= totalPrice;
 
   return (
     <div className="min-h-screen bg-muted">
