@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { useSearchParams } from "react-router-dom";
-import { MapPin, Calendar, Clock, Users, CreditCard, ArrowRight, Check, Loader2 } from "lucide-react";
+import { useSearchParams, useNavigate } from "react-router-dom";
+import { MapPin, Calendar, Clock, Users, CreditCard, ArrowRight, Check, Loader2, Wallet } from "lucide-react";
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
 import { Button } from "@/components/ui/button";
@@ -16,6 +16,8 @@ import {
 } from "@/components/ui/select";
 import { toast } from "@/hooks/use-toast";
 import { usePaystack } from "@/hooks/usePaystack";
+import { useWalletPayment } from "@/hooks/useWalletPayment";
+import { useWallet } from "@/hooks/useWallet";
 import { SeatPicker } from "@/components/booking/SeatPicker";
 import { supabase } from "@/integrations/supabase/client";
 import { z } from "zod";
