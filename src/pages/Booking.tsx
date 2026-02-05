@@ -49,10 +49,14 @@ const steps = [
 
 const Booking = () => {
   const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
   const { initializePayment, isLoading } = usePaystack();
+  const { payWithWallet, isLoading: walletLoading } = useWalletPayment();
+  const { wallet, user } = useWallet();
   const [currentStep, setCurrentStep] = useState(1);
   const [routes, setRoutes] = useState<Route[]>([]);
   const [selectedSeats, setSelectedSeats] = useState<number[]>([]);
+  const [paymentMethod, setPaymentMethod] = useState<'paystack' | 'wallet'>('paystack');
   const [formData, setFormData] = useState({
     routeId: searchParams.get("route") || "",
     date: "",
