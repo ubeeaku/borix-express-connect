@@ -163,6 +163,68 @@ export type Database = {
         }
         Relationships: []
       }
+      wallet_transactions: {
+        Row: {
+          amount: number
+          booking_reference: string | null
+          created_at: string
+          description: string | null
+          id: string
+          type: string
+          wallet_id: string
+        }
+        Insert: {
+          amount: number
+          booking_reference?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          type: string
+          wallet_id: string
+        }
+        Update: {
+          amount?: number
+          booking_reference?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          type?: string
+          wallet_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "wallet_transactions_wallet_id_fkey"
+            columns: ["wallet_id"]
+            isOneToOne: false
+            referencedRelation: "wallets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      wallets: {
+        Row: {
+          balance: number
+          created_at: string
+          id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          balance?: number
+          created_at?: string
+          id?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          balance?: number
+          created_at?: string
+          id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       available_seats_view: {
