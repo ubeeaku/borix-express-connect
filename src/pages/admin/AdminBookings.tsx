@@ -75,9 +75,13 @@ const sidebarItems = [
 const AdminBookings = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
+  const [refundBooking, setRefundBooking] = useState<Booking | null>(null);
+  const [refundAmount, setRefundAmount] = useState("");
+  const [refundReason, setRefundReason] = useState("");
   const [routes, setRoutes] = useState<{ id: string; origin: string; destination: string }[]>([]);
   const location = useLocation();
   const { user, isAdmin, isLoading: authLoading, signOut } = useAdminAuth();
+  const { processRefund, isLoading: refundLoading } = useRefund();
   const {
     bookings,
     isLoading,
@@ -85,6 +89,7 @@ const AdminBookings = () => {
     setFilter,
     updateBookingStatus,
     getStats,
+    refetch,
   } = useBookings();
 
   useEffect(() => {
