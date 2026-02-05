@@ -566,7 +566,7 @@ const Booking = () => {
                     <Button
                       variant="outline"
                       onClick={() => setCurrentStep(currentStep - 1)}
-                      disabled={isLoading}
+                      disabled={isLoading || walletLoading}
                     >
                       Back
                     </Button>
@@ -582,15 +582,18 @@ const Booking = () => {
                         variant="hero" 
                         size="lg" 
                         onClick={handlePayment}
-                        disabled={isLoading}
+                        disabled={isLoading || walletLoading || (paymentMethod === 'wallet' && !canPayWithWallet)}
                       >
-                        {isLoading ? (
+                        {isLoading || walletLoading ? (
                           <>
                             <Loader2 className="w-4 h-4 animate-spin" />
                             Processing...
                           </>
                         ) : (
                           <>
+                            {paymentMethod === 'wallet' ? (
+                              <Wallet className="w-4 h-4" />
+                            ) : null}
                             Pay ₦{totalPrice.toLocaleString()}
                             <ArrowRight className="w-4 h-4" />
                           </>
