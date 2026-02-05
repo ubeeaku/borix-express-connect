@@ -534,6 +534,101 @@ const AdminBookings = () => {
           )}
         </DialogContent>
       </Dialog>
+
+      {/* Refund Dialog */}
+      <Dialog open={!!refundBooking} onOpenChange={() => setRefundBooking(null)}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Issue Refund</DialogTitle>
+          </DialogHeader>
+          {refundBooking && (
+            <div className="space-y-4">
+              <div className="bg-muted rounded-xl p-4 space-y-2">
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">Reference</span>
+                  <span className="font-mono font-medium">{refundBooking.booking_reference}</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">Passenger</span>
+                  <span className="font-medium">{refundBooking.passenger_name}</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">Email</span>
+                  <span className="font-medium">{refundBooking.passenger_email}</span>
+                </div>
+                <div className="flex justify-between text-sm border-t pt-2 mt-2">
+                  <span className="text-muted-foreground">Booking Amount</span>
+                  <span className="font-bold">₦{refundBooking.total_amount.toLocaleString()}</span>
+                </div>
+              </div>
+
+              <div className="space-y-3">
+                <div>
+                  <Label htmlFor="refundAmount">Refund Amount (₦)</Label>
+                  <Input
+                    id="refundAmount"
+                    type="number"
+                    value={refundAmount}
+                    onChange={(e) => setRefundAmount(e.target.value)}
+                    placeholder="Enter refund amount"
+                    className="mt-1"
+                    max={refundBooking.total_amount}
+                  />
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Maximum: ₦{refundBooking.total_amount.toLocaleString()}
+                  </p>
+                </div>
+                
+                <div>
+                  <Label htmlFor="refundReason">Reason (Optional)</Label>
+                  <Input
+                    id="refundReason"
+                    value={refundReason}
+                    onChange={(e) => setRefundReason(e.target.value)}
+                    placeholder="e.g., Trip cancelled, Customer request"
+                    className="mt-1"
+                  />
+                </div>
+              </div>
+
+              <div className="bg-accent/10 rounded-xl p-4">
+                <p className="text-sm text-foreground">
+                  <strong>Note:</strong> This will credit ₦{parseFloat(refundAmount) || 0} to the passenger's wallet.
+                  The passenger must have an account with this email to receive the refund.
+                </p>
+              </div>
+
+              <div className="flex gap-3 pt-2">
+                <Button
+                  variant="outline"
+                  className="flex-1"
+                  onClick={() => setRefundBooking(null)}
+                  disabled={refundLoading}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  className="flex-1"
+                  onClick={handleRefund}
+                  disabled={refundLoading || !refundAmount}
+                >
+                  {refundLoading ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                      Processing...
+                    </>
+                  ) : (
+                    <>
+                      <RotateCcw className="w-4 h-4 mr-2" />
+                      Process Refund
+                    </>
+                  )}
+                </Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
