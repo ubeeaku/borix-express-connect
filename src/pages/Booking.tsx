@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { useSearchParams } from "react-router-dom";
-import { MapPin, Calendar, Clock, Users, CreditCard, ArrowRight, Check, Loader2 } from "lucide-react";
+import { useSearchParams, useNavigate } from "react-router-dom";
+import { MapPin, Calendar, Clock, Users, CreditCard, ArrowRight, Check, Loader2, Wallet } from "lucide-react";
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
 import { Button } from "@/components/ui/button";
@@ -16,6 +16,8 @@ import {
 } from "@/components/ui/select";
 import { toast } from "@/hooks/use-toast";
 import { usePaystack } from "@/hooks/usePaystack";
+import { useWalletPayment } from "@/hooks/useWalletPayment";
+import { useWallet } from "@/hooks/useWallet";
 import { SeatPicker } from "@/components/booking/SeatPicker";
 import { supabase } from "@/integrations/supabase/client";
 import { z } from "zod";
@@ -47,10 +49,14 @@ const steps = [
 
 const Booking = () => {
   const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
   const { initializePayment, isLoading } = usePaystack();
+  const { payWithWallet, isLoading: walletLoading } = useWalletPayment();
+  const { wallet, user } = useWallet();
   const [currentStep, setCurrentStep] = useState(1);
   const [routes, setRoutes] = useState<Route[]>([]);
   const [selectedSeats, setSelectedSeats] = useState<number[]>([]);
+  const [paymentMethod, setPaymentMethod] = useState<'paystack' | 'wallet'>('paystack');
   const [formData, setFormData] = useState({
     routeId: searchParams.get("route") || "",
     date: "",
@@ -138,31 +144,73 @@ const Booking = () => {
   const handlePayment = async () => {
     if (!selectedRoute) return;
 
-    const result = await initializePayment({
-      email: formData.email,
-      amount: totalPrice,
-      name: formData.name,
-      phone: formData.phone,
-      routeId: formData.routeId,
-      date: formData.date,
-      time: formData.time,
-      passengers: formData.passengers,
-      seats: selectedSeats,
-      nextOfKinName: formData.nextOfKinName,
-      nextOfKinPhone: formData.nextOfKinPhone,
-    });
+    if (paymentMethod === 'wallet') {
+      if (!user) {
+        toast({
+          title: "Login Required",
+          description: "Please log in to pay with your wallet.",
+          variant: "destructive",
+        });
+        return;
+      }
 
-    if (result.success && result.authorization_url) {
-      sessionStorage.setItem('paystack_reference', result.reference || '');
-      window.location.href = result.authorization_url;
-    } else {
-      toast({
-        title: "Payment Failed",
-        description: result.error || "Could not initialize payment. Please try again.",
-        variant: "destructive",
+      const result = await payWithWallet({
+        email: formData.email,
+        amount: totalPrice,
+        name: formData.name,
+        phone: formData.phone,
+        routeId: formData.routeId,
+        date: formData.date,
+        time: formData.time,
+        passengers: formData.passengers,
+        seats: selectedSeats,
+        nextOfKinName: formData.nextOfKinName,
+        nextOfKinPhone: formData.nextOfKinPhone,
       });
+
+      if (result.success) {
+        toast({
+          title: "Payment Successful",
+          description: `Booking confirmed! Reference: ${result.reference}`,
+        });
+        navigate(`/confirmation?reference=${result.reference}`);
+      } else {
+        toast({
+          title: "Payment Failed",
+          description: result.error || "Could not process wallet payment.",
+          variant: "destructive",
+        });
+      }
+    } else {
+      const result = await initializePayment({
+        email: formData.email,
+        amount: totalPrice,
+        name: formData.name,
+        phone: formData.phone,
+        routeId: formData.routeId,
+        date: formData.date,
+        time: formData.time,
+        passengers: formData.passengers,
+        seats: selectedSeats,
+        nextOfKinName: formData.nextOfKinName,
+        nextOfKinPhone: formData.nextOfKinPhone,
+      });
+
+      if (result.success && result.authorization_url) {
+        sessionStorage.setItem('paystack_reference', result.reference || '');
+        window.location.href = result.authorization_url;
+      } else {
+        toast({
+          title: "Payment Failed",
+          description: result.error || "Could not initialize payment. Please try again.",
+          variant: "destructive",
+        });
+      }
     }
   };
+
+  const walletBalance = wallet?.balance ? wallet.balance / 100 : 0;
+  const canPayWithWallet = user && walletBalance >= totalPrice;
 
   return (
     <div className="min-h-screen bg-muted">
@@ -431,17 +479,84 @@ const Booking = () => {
                       </div>
                     </div>
 
-                    <div className="bg-accent/10 rounded-xl p-4 flex items-center gap-4">
-                      <div className="w-12 h-12 bg-accent rounded-xl flex items-center justify-center">
-                        <CreditCard className="w-6 h-6 text-accent-foreground" />
-                      </div>
-                      <div>
-                        <p className="font-semibold text-foreground">Pay with Paystack</p>
-                        <p className="text-sm text-muted-foreground">
-                          Secure payment via card, bank transfer, or USSD
-                        </p>
-                      </div>
+                    <div className="space-y-3">
+                      <p className="font-medium text-foreground">Select Payment Method</p>
+                      
+                      {/* Paystack Option */}
+                      <button
+                        type="button"
+                        onClick={() => setPaymentMethod('paystack')}
+                        className={`w-full rounded-xl p-4 flex items-center gap-4 border-2 transition-colors ${
+                          paymentMethod === 'paystack'
+                            ? 'border-accent bg-accent/10'
+                            : 'border-border hover:border-accent/50'
+                        }`}
+                      >
+                        <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${
+                          paymentMethod === 'paystack' ? 'bg-accent' : 'bg-muted'
+                        }`}>
+                          <CreditCard className={`w-6 h-6 ${
+                            paymentMethod === 'paystack' ? 'text-accent-foreground' : 'text-muted-foreground'
+                          }`} />
+                        </div>
+                        <div className="text-left flex-1">
+                          <p className="font-semibold text-foreground">Pay with Paystack</p>
+                          <p className="text-sm text-muted-foreground">
+                            Card, bank transfer, or USSD
+                          </p>
+                        </div>
+                        {paymentMethod === 'paystack' && (
+                          <Check className="w-5 h-5 text-accent" />
+                        )}
+                      </button>
+
+                      {/* Wallet Option */}
+                      <button
+                        type="button"
+                        onClick={() => user && setPaymentMethod('wallet')}
+                        disabled={!user}
+                        className={`w-full rounded-xl p-4 flex items-center gap-4 border-2 transition-colors ${
+                          paymentMethod === 'wallet'
+                            ? 'border-accent bg-accent/10'
+                            : !user
+                            ? 'border-border opacity-50 cursor-not-allowed'
+                            : 'border-border hover:border-accent/50'
+                        }`}
+                      >
+                        <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${
+                          paymentMethod === 'wallet' ? 'bg-accent' : 'bg-muted'
+                        }`}>
+                          <Wallet className={`w-6 h-6 ${
+                            paymentMethod === 'wallet' ? 'text-accent-foreground' : 'text-muted-foreground'
+                          }`} />
+                        </div>
+                        <div className="text-left flex-1">
+                          <p className="font-semibold text-foreground">Pay with Wallet</p>
+                          {user ? (
+                            <p className="text-sm text-muted-foreground">
+                              Balance: ₦{walletBalance.toLocaleString("en-NG", { minimumFractionDigits: 2 })}
+                              {!canPayWithWallet && walletBalance > 0 && (
+                                <span className="text-destructive ml-1">(Insufficient)</span>
+                              )}
+                            </p>
+                          ) : (
+                            <p className="text-sm text-muted-foreground">
+                              Sign in to use wallet
+                            </p>
+                          )}
+                        </div>
+                        {paymentMethod === 'wallet' && (
+                          <Check className="w-5 h-5 text-accent" />
+                        )}
+                      </button>
                     </div>
+
+                    {paymentMethod === 'wallet' && !canPayWithWallet && user && (
+                      <div className="bg-destructive/10 text-destructive rounded-xl p-4 text-sm">
+                        Your wallet balance (₦{walletBalance.toLocaleString()}) is less than the total amount (₦{totalPrice.toLocaleString()}). 
+                        Please use Paystack or top up your wallet.
+                      </div>
+                    )}
                   </div>
                 )}
 
@@ -451,7 +566,7 @@ const Booking = () => {
                     <Button
                       variant="outline"
                       onClick={() => setCurrentStep(currentStep - 1)}
-                      disabled={isLoading}
+                      disabled={isLoading || walletLoading}
                     >
                       Back
                     </Button>
@@ -467,15 +582,18 @@ const Booking = () => {
                         variant="hero" 
                         size="lg" 
                         onClick={handlePayment}
-                        disabled={isLoading}
+                        disabled={isLoading || walletLoading || (paymentMethod === 'wallet' && !canPayWithWallet)}
                       >
-                        {isLoading ? (
+                        {isLoading || walletLoading ? (
                           <>
                             <Loader2 className="w-4 h-4 animate-spin" />
                             Processing...
                           </>
                         ) : (
                           <>
+                            {paymentMethod === 'wallet' ? (
+                              <Wallet className="w-4 h-4" />
+                            ) : null}
                             Pay ₦{totalPrice.toLocaleString()}
                             <ArrowRight className="w-4 h-4" />
                           </>
