@@ -479,17 +479,84 @@ const Booking = () => {
                       </div>
                     </div>
 
-                    <div className="bg-accent/10 rounded-xl p-4 flex items-center gap-4">
-                      <div className="w-12 h-12 bg-accent rounded-xl flex items-center justify-center">
-                        <CreditCard className="w-6 h-6 text-accent-foreground" />
-                      </div>
-                      <div>
-                        <p className="font-semibold text-foreground">Pay with Paystack</p>
-                        <p className="text-sm text-muted-foreground">
-                          Secure payment via card, bank transfer, or USSD
-                        </p>
-                      </div>
+                    <div className="space-y-3">
+                      <p className="font-medium text-foreground">Select Payment Method</p>
+                      
+                      {/* Paystack Option */}
+                      <button
+                        type="button"
+                        onClick={() => setPaymentMethod('paystack')}
+                        className={`w-full rounded-xl p-4 flex items-center gap-4 border-2 transition-colors ${
+                          paymentMethod === 'paystack'
+                            ? 'border-accent bg-accent/10'
+                            : 'border-border hover:border-accent/50'
+                        }`}
+                      >
+                        <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${
+                          paymentMethod === 'paystack' ? 'bg-accent' : 'bg-muted'
+                        }`}>
+                          <CreditCard className={`w-6 h-6 ${
+                            paymentMethod === 'paystack' ? 'text-accent-foreground' : 'text-muted-foreground'
+                          }`} />
+                        </div>
+                        <div className="text-left flex-1">
+                          <p className="font-semibold text-foreground">Pay with Paystack</p>
+                          <p className="text-sm text-muted-foreground">
+                            Card, bank transfer, or USSD
+                          </p>
+                        </div>
+                        {paymentMethod === 'paystack' && (
+                          <Check className="w-5 h-5 text-accent" />
+                        )}
+                      </button>
+
+                      {/* Wallet Option */}
+                      <button
+                        type="button"
+                        onClick={() => user && setPaymentMethod('wallet')}
+                        disabled={!user}
+                        className={`w-full rounded-xl p-4 flex items-center gap-4 border-2 transition-colors ${
+                          paymentMethod === 'wallet'
+                            ? 'border-accent bg-accent/10'
+                            : !user
+                            ? 'border-border opacity-50 cursor-not-allowed'
+                            : 'border-border hover:border-accent/50'
+                        }`}
+                      >
+                        <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${
+                          paymentMethod === 'wallet' ? 'bg-accent' : 'bg-muted'
+                        }`}>
+                          <Wallet className={`w-6 h-6 ${
+                            paymentMethod === 'wallet' ? 'text-accent-foreground' : 'text-muted-foreground'
+                          }`} />
+                        </div>
+                        <div className="text-left flex-1">
+                          <p className="font-semibold text-foreground">Pay with Wallet</p>
+                          {user ? (
+                            <p className="text-sm text-muted-foreground">
+                              Balance: ₦{walletBalance.toLocaleString("en-NG", { minimumFractionDigits: 2 })}
+                              {!canPayWithWallet && walletBalance > 0 && (
+                                <span className="text-destructive ml-1">(Insufficient)</span>
+                              )}
+                            </p>
+                          ) : (
+                            <p className="text-sm text-muted-foreground">
+                              Sign in to use wallet
+                            </p>
+                          )}
+                        </div>
+                        {paymentMethod === 'wallet' && (
+                          <Check className="w-5 h-5 text-accent" />
+                        )}
+                      </button>
                     </div>
+
+                    {paymentMethod === 'wallet' && !canPayWithWallet && user && (
+                      <div className="bg-destructive/10 text-destructive rounded-xl p-4 text-sm">
+                        Your wallet balance (₦{walletBalance.toLocaleString()}) is less than the total amount (₦{totalPrice.toLocaleString()}). 
+                        Please use Paystack or top up your wallet.
+                      </div>
+                    )}
                   </div>
                 )}
 
