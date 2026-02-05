@@ -8,6 +8,7 @@ import RoutesPage from "./pages/Routes";
 import Booking from "./pages/Booking";
 import Contact from "./pages/Contact";
 import Confirmation from "./pages/Confirmation";
+import Wallet from "./pages/Wallet";
 import AdminLogin from "./pages/admin/AdminLogin";
 import AdminDashboard from "./pages/admin/AdminDashboard";
 import AdminBookings from "./pages/admin/AdminBookings";
