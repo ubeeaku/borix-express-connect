@@ -111,6 +111,51 @@ const AdminBookings = () => {
     }
   };
 
+  const handleRefund = async () => {
+    if (!refundBooking) return;
+    
+    const amount = parseFloat(refundAmount);
+    if (isNaN(amount) || amount <= 0) {
+      toast({ title: "Please enter a valid refund amount", variant: "destructive" });
+      return;
+    }
+    
+    if (amount > refundBooking.total_amount) {
+      toast({ title: "Refund cannot exceed booking amount", variant: "destructive" });
+      return;
+    }
+
+    const result = await processRefund({
+      bookingId: refundBooking.id,
+      passengerEmail: refundBooking.passenger_email,
+      refundAmount: amount,
+      reason: refundReason || undefined,
+    });
+
+    if (result.success) {
+      toast({ 
+        title: "Refund Processed",
+        description: `₦${amount.toLocaleString()} refunded to wallet`,
+      });
+      setRefundBooking(null);
+      setRefundAmount("");
+      setRefundReason("");
+      fetchBookings();
+    } else {
+      toast({ 
+        title: "Refund Failed",
+        description: result.error,
+        variant: "destructive",
+      });
+    }
+  };
+
+  const openRefundDialog = (booking: Booking) => {
+    setRefundBooking(booking);
+    setRefundAmount(booking.total_amount.toString());
+    setRefundReason("");
+  };
+
   const getStatusBadge = (status: string) => {
     switch (status) {
       case "completed":
@@ -119,6 +164,8 @@ const AdminBookings = () => {
         return <Badge className="bg-yellow-100 text-yellow-700 hover:bg-yellow-100">Pending</Badge>;
       case "failed":
         return <Badge className="bg-red-100 text-red-700 hover:bg-red-100">Failed</Badge>;
+      case "refunded":
+        return <Badge className="bg-blue-100 text-blue-700 hover:bg-blue-100">Refunded</Badge>;
       default:
         return <Badge variant="secondary">{status}</Badge>;
     }
