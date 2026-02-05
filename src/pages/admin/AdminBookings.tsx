@@ -427,6 +427,12 @@ const AdminBookings = () => {
                                 <Eye className="w-4 h-4 mr-2" />
                                 View Details
                               </DropdownMenuItem>
+                              {booking.payment_status === "completed" && (
+                                <DropdownMenuItem onClick={() => openRefundDialog(booking)}>
+                                  <RotateCcw className="w-4 h-4 mr-2" />
+                                  Issue Refund
+                                </DropdownMenuItem>
+                              )}
                               {booking.payment_status === "pending" && (
                                 <DropdownMenuItem
                                   onClick={() => handleStatusChange(booking.id, "completed")}
@@ -434,10 +440,10 @@ const AdminBookings = () => {
                                   Mark as Completed
                                 </DropdownMenuItem>
                               )}
-                              {booking.payment_status !== "failed" && (
+                              {booking.payment_status !== "failed" && booking.payment_status !== "refunded" && (
                                 <DropdownMenuItem
                                   onClick={() => handleStatusChange(booking.id, "failed")}
-                                  className="text-red-600"
+                                  className="text-destructive"
                                 >
                                   Mark as Failed
                                 </DropdownMenuItem>
