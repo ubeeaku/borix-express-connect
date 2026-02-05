@@ -89,7 +89,7 @@ const AdminBookings = () => {
     setFilter,
     updateBookingStatus,
     getStats,
-    refetch,
+    fetchBookings,
   } = useBookings();
 
   useEffect(() => {
