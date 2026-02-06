@@ -9,6 +9,7 @@ import Booking from "./pages/Booking";
 import Contact from "./pages/Contact";
 import Confirmation from "./pages/Confirmation";
 import Wallet from "./pages/Wallet";
+import Auth from "./pages/Auth";
 import AdminLogin from "./pages/admin/AdminLogin";
 import AdminDashboard from "./pages/admin/AdminDashboard";
 import AdminBookings from "./pages/admin/AdminBookings";
@@ -36,6 +37,7 @@ const App = () => (
           <Route path="/booking" element={<Booking />} />
           <Route path="/contact" element={<Contact />} />
           <Route path="/confirmation" element={<Confirmation />} />
+          <Route path="/auth" element={<Auth />} />
           <Route path="/wallet" element={<Wallet />} />
           <Route path="/admin" element={<AdminLogin />} />
           <Route path="/admin/login" element={<AdminLogin />} />

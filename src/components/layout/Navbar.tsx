@@ -1,8 +1,9 @@
 import { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { Menu, X, Phone } from "lucide-react";
+import { Menu, X, Phone, Wallet, LogIn, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useAuth } from "@/hooks/useAuth";
 import borixLogo from "@/assets/borix-logo-new.png";
 
 const navLinks = [
@@ -15,6 +16,7 @@ const navLinks = [
 export const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
   const location = useLocation();
+  const { user, signOut } = useAuth();
 
   return (
     <nav className="fixed top-0 left-0 right-0 z-50 bg-white shadow-md border-b border-border">
@@ -43,16 +45,29 @@ export const Navbar = () => {
           </div>
 
           {/* Desktop CTA */}
-          <div className="hidden md:flex items-center gap-5">
+          <div className="hidden md:flex items-center gap-4">
             <a href="tel:+2349036573414" className="flex items-center gap-2 text-primary/80 hover:text-accent transition-colors">
               <Phone className="w-4 h-4" />
               <span className="text-sm font-medium">+234 903 657 3414</span>
             </a>
-            <Link to="/admin">
-              <Button variant="accent" size="sm" className="font-semibold">
-                Admin
-              </Button>
-            </Link>
+            {user ? (
+              <>
+                <Link to="/wallet">
+                  <Button variant="outline" size="sm" className="font-semibold gap-2">
+                    <Wallet className="w-4 h-4" /> My Wallet
+                  </Button>
+                </Link>
+                <Button variant="ghost" size="sm" onClick={signOut} className="font-semibold gap-2 text-muted-foreground">
+                  <LogOut className="w-4 h-4" /> Sign Out
+                </Button>
+              </>
+            ) : (
+              <Link to="/auth">
+                <Button variant="accent" size="sm" className="font-semibold gap-2">
+                  <LogIn className="w-4 h-4" /> Sign In
+                </Button>
+              </Link>
+            )}
           </div>
 
           {/* Mobile Menu Button */}
@@ -89,12 +104,25 @@ export const Navbar = () => {
                   {link.name}
                 </Link>
               ))}
-              <div className="pt-4 border-t border-border">
-                <Link to="/admin" onClick={() => setIsOpen(false)}>
-                  <Button variant="accent" className="w-full font-semibold">
-                    Admin Dashboard
-                  </Button>
-                </Link>
+              <div className="pt-4 border-t border-border space-y-3">
+                {user ? (
+                  <>
+                    <Link to="/wallet" onClick={() => setIsOpen(false)}>
+                      <Button variant="outline" className="w-full font-semibold gap-2">
+                        <Wallet className="w-4 h-4" /> My Wallet
+                      </Button>
+                    </Link>
+                    <Button variant="ghost" className="w-full font-semibold gap-2 text-muted-foreground" onClick={() => { signOut(); setIsOpen(false); }}>
+                      <LogOut className="w-4 h-4" /> Sign Out
+                    </Button>
+                  </>
+                ) : (
+                  <Link to="/auth" onClick={() => setIsOpen(false)}>
+                    <Button variant="accent" className="w-full font-semibold gap-2">
+                      <LogIn className="w-4 h-4" /> Sign In
+                    </Button>
+                  </Link>
+                )}
               </div>
             </div>
           </motion.div>
