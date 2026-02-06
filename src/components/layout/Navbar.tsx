@@ -104,12 +104,25 @@ export const Navbar = () => {
                   {link.name}
                 </Link>
               ))}
-              <div className="pt-4 border-t border-border">
-                <Link to="/admin" onClick={() => setIsOpen(false)}>
-                  <Button variant="accent" className="w-full font-semibold">
-                    Admin Dashboard
-                  </Button>
-                </Link>
+              <div className="pt-4 border-t border-border space-y-3">
+                {user ? (
+                  <>
+                    <Link to="/wallet" onClick={() => setIsOpen(false)}>
+                      <Button variant="outline" className="w-full font-semibold gap-2">
+                        <Wallet className="w-4 h-4" /> My Wallet
+                      </Button>
+                    </Link>
+                    <Button variant="ghost" className="w-full font-semibold gap-2 text-muted-foreground" onClick={() => { signOut(); setIsOpen(false); }}>
+                      <LogOut className="w-4 h-4" /> Sign Out
+                    </Button>
+                  </>
+                ) : (
+                  <Link to="/auth" onClick={() => setIsOpen(false)}>
+                    <Button variant="accent" className="w-full font-semibold gap-2">
+                      <LogIn className="w-4 h-4" /> Sign In
+                    </Button>
+                  </Link>
+                )}
               </div>
             </div>
           </motion.div>
