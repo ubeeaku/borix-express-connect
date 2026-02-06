@@ -45,16 +45,29 @@ export const Navbar = () => {
           </div>
 
           {/* Desktop CTA */}
-          <div className="hidden md:flex items-center gap-5">
+          <div className="hidden md:flex items-center gap-4">
             <a href="tel:+2349036573414" className="flex items-center gap-2 text-primary/80 hover:text-accent transition-colors">
               <Phone className="w-4 h-4" />
               <span className="text-sm font-medium">+234 903 657 3414</span>
             </a>
-            <Link to="/admin">
-              <Button variant="accent" size="sm" className="font-semibold">
-                Admin
-              </Button>
-            </Link>
+            {user ? (
+              <>
+                <Link to="/wallet">
+                  <Button variant="outline" size="sm" className="font-semibold gap-2">
+                    <Wallet className="w-4 h-4" /> My Wallet
+                  </Button>
+                </Link>
+                <Button variant="ghost" size="sm" onClick={signOut} className="font-semibold gap-2 text-muted-foreground">
+                  <LogOut className="w-4 h-4" /> Sign Out
+                </Button>
+              </>
+            ) : (
+              <Link to="/auth">
+                <Button variant="accent" size="sm" className="font-semibold gap-2">
+                  <LogIn className="w-4 h-4" /> Sign In
+                </Button>
+              </Link>
+            )}
           </div>
 
           {/* Mobile Menu Button */}
