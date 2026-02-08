@@ -14,15 +14,15 @@ interface SeatPickerProps {
 
 // 5 cars available, each with 5 passenger seats
 const TOTAL_CARS = 5;
-const SEATS_PER_CAR = 5;
+const SEATS_PER_CAR = 7;
 
-// Seat layout per car: 1 front (beside driver), 2 middle, 2 back
+// Seat layout per car: 1 front (beside driver), 3 middle, 3 back
 const getCarLayout = (carIndex: number) => {
   const baseNumber = carIndex * SEATS_PER_CAR;
   return [
     { row: 1, label: "Front", seats: [{ number: baseNumber + 1, label: "A1" }] },
-    { row: 2, label: "Middle", seats: [{ number: baseNumber + 2, label: "B1" }, { number: baseNumber + 3, label: "B2" }] },
-    { row: 3, label: "Back", seats: [{ number: baseNumber + 4, label: "C1" }, { number: baseNumber + 5, label: "C2" }] },
+    { row: 2, label: "Middle", seats: [{ number: baseNumber + 2, label: "B1" }, { number: baseNumber + 3, label: "B2" }, { number: baseNumber + 4, label: "B3" }] },
+    { row: 3, label: "Back", seats: [{ number: baseNumber + 5, label: "C1" }, { number: baseNumber + 6, label: "C2" }, { number: baseNumber + 7, label: "C3" }] },
   ];
 };
 
