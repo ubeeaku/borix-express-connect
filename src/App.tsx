@@ -43,6 +43,9 @@ const App = () => (
           <Route path="/confirmation" element={<Confirmation />} />
           <Route path="/auth" element={<Auth />} />
           <Route path="/wallet" element={<Wallet />} />
+          <Route path="/driver/drive-with-us" element={<DriveWithUs />} />
+          <Route path="/driver/requirements" element={<DriverRequirements />} />
+          <Route path="/driver/apply" element={<DriverApplication />} />
           <Route path="/admin" element={<AdminLogin />} />
           <Route path="/admin/login" element={<AdminLogin />} />
           <Route path="/admin/dashboard" element={<ProtectedAdminRoute><AdminDashboard /></ProtectedAdminRoute>} />
