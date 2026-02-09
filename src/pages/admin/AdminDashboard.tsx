@@ -67,7 +67,7 @@ const stats = [
 ];
 
 const recentBookings = [
-  { id: "BRX-001", route: "Lagos → Abuja", customer: "Chidi O.", amount: 15000, status: "confirmed" },
+  { id: "BRX-001", route: "Lagos → Abuja", customer: "Chidi O.", amount: 13000, status: "confirmed" },
   { id: "BRX-002", route: "Jos → Abuja", customer: "Amina I.", amount: 8000, status: "confirmed" },
   { id: "BRX-003", route: "Lagos → PH", customer: "Emeka N.", amount: 12000, status: "pending" },
   { id: "BRX-004", route: "Kano → Lagos", customer: "Fatima A.", amount: 18000, status: "confirmed" },
