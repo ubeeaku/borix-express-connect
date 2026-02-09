@@ -10,6 +10,7 @@ const navLinks = [
   { name: "Home", path: "/" },
   { name: "Routes", path: "/routes" },
   { name: "Book Now", path: "/booking" },
+  { name: "Drive With Us", path: "/driver/drive-with-us" },
   { name: "Contact", path: "/contact" },
 ];
 
