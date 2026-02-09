@@ -29,6 +29,7 @@ const sidebarItems = [
   { name: "Trips", icon: Calendar, path: "/admin/trips" },
   { name: "Vehicles", icon: Truck, path: "/admin/vehicles" },
   { name: "Drivers", icon: Users, path: "/admin/drivers" },
+  { name: "Applications", icon: ClipboardList, path: "/admin/driver-applications" },
   { name: "Bookings", icon: Ticket, path: "/admin/bookings" },
   { name: "Trip Manifest", icon: ClipboardList, path: "/admin/manifest" },
   { name: "Payments", icon: CreditCard, path: "/admin/payments" },
