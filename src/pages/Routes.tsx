@@ -17,7 +17,7 @@ const routes = [
     price: 15000,
     duration: "4 hours",
     departures: ["7:00 AM", "1:00 PM"],
-    availableSeats: 5,
+    availableSeats: 7,
     image: josRock,
   },
   {
