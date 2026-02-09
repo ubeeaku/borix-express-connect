@@ -18,10 +18,14 @@ import AdminRoutes from "./pages/admin/AdminRoutes";
 import AdminTrips from "./pages/admin/AdminTrips";
 import AdminVehicles from "./pages/admin/AdminVehicles";
 import AdminDrivers from "./pages/admin/AdminDrivers";
+import AdminDriverApplications from "./pages/admin/AdminDriverApplications";
 import AdminPayments from "./pages/admin/AdminPayments";
 import AdminSettings from "./pages/admin/AdminSettings";
 import ProtectedAdminRoute from "./components/auth/ProtectedAdminRoute";
 import NotFound from "./pages/NotFound";
+import DriveWithUs from "./pages/driver/DriveWithUs";
+import DriverRequirements from "./pages/driver/DriverRequirements";
+import DriverApplication from "./pages/driver/DriverApplication";
 
 const queryClient = new QueryClient();
 
