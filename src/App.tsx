@@ -18,10 +18,14 @@ import AdminRoutes from "./pages/admin/AdminRoutes";
 import AdminTrips from "./pages/admin/AdminTrips";
 import AdminVehicles from "./pages/admin/AdminVehicles";
 import AdminDrivers from "./pages/admin/AdminDrivers";
+import AdminDriverApplications from "./pages/admin/AdminDriverApplications";
 import AdminPayments from "./pages/admin/AdminPayments";
 import AdminSettings from "./pages/admin/AdminSettings";
 import ProtectedAdminRoute from "./components/auth/ProtectedAdminRoute";
 import NotFound from "./pages/NotFound";
+import DriveWithUs from "./pages/driver/DriveWithUs";
+import DriverRequirements from "./pages/driver/DriverRequirements";
+import DriverApplication from "./pages/driver/DriverApplication";
 
 const queryClient = new QueryClient();
 
@@ -39,6 +43,9 @@ const App = () => (
           <Route path="/confirmation" element={<Confirmation />} />
           <Route path="/auth" element={<Auth />} />
           <Route path="/wallet" element={<Wallet />} />
+          <Route path="/driver/drive-with-us" element={<DriveWithUs />} />
+          <Route path="/driver/requirements" element={<DriverRequirements />} />
+          <Route path="/driver/apply" element={<DriverApplication />} />
           <Route path="/admin" element={<AdminLogin />} />
           <Route path="/admin/login" element={<AdminLogin />} />
           <Route path="/admin/dashboard" element={<ProtectedAdminRoute><AdminDashboard /></ProtectedAdminRoute>} />
@@ -46,6 +53,7 @@ const App = () => (
           <Route path="/admin/trips" element={<ProtectedAdminRoute><AdminTrips /></ProtectedAdminRoute>} />
           <Route path="/admin/vehicles" element={<ProtectedAdminRoute><AdminVehicles /></ProtectedAdminRoute>} />
           <Route path="/admin/drivers" element={<ProtectedAdminRoute><AdminDrivers /></ProtectedAdminRoute>} />
+          <Route path="/admin/driver-applications" element={<ProtectedAdminRoute><AdminDriverApplications /></ProtectedAdminRoute>} />
           <Route path="/admin/bookings" element={<ProtectedAdminRoute><AdminBookings /></ProtectedAdminRoute>} />
           <Route path="/admin/manifest" element={<ProtectedAdminRoute><AdminManifest /></ProtectedAdminRoute>} />
           <Route path="/admin/payments" element={<ProtectedAdminRoute><AdminPayments /></ProtectedAdminRoute>} />

@@ -118,6 +118,93 @@ export type Database = {
           },
         ]
       }
+      driver_applications: {
+        Row: {
+          address: string
+          admin_notes: string | null
+          bank_account_name: string
+          bank_account_number: string
+          bank_name: string
+          city: string
+          created_at: string
+          drivers_license_url: string | null
+          email: string
+          full_name: string
+          guarantor_address: string | null
+          guarantor_name: string
+          guarantor_phone: string
+          guarantor_relationship: string | null
+          id: string
+          nin_url: string | null
+          passport_photo_url: string | null
+          phone: string
+          roadworthiness_url: string | null
+          state: string
+          status: Database["public"]["Enums"]["driver_application_status"]
+          updated_at: string
+          vehicle_details: string | null
+          vehicle_ownership: Database["public"]["Enums"]["vehicle_ownership_type"]
+          vehicle_papers_url: string | null
+          years_experience: number
+        }
+        Insert: {
+          address: string
+          admin_notes?: string | null
+          bank_account_name: string
+          bank_account_number: string
+          bank_name: string
+          city: string
+          created_at?: string
+          drivers_license_url?: string | null
+          email: string
+          full_name: string
+          guarantor_address?: string | null
+          guarantor_name: string
+          guarantor_phone: string
+          guarantor_relationship?: string | null
+          id?: string
+          nin_url?: string | null
+          passport_photo_url?: string | null
+          phone: string
+          roadworthiness_url?: string | null
+          state: string
+          status?: Database["public"]["Enums"]["driver_application_status"]
+          updated_at?: string
+          vehicle_details?: string | null
+          vehicle_ownership: Database["public"]["Enums"]["vehicle_ownership_type"]
+          vehicle_papers_url?: string | null
+          years_experience?: number
+        }
+        Update: {
+          address?: string
+          admin_notes?: string | null
+          bank_account_name?: string
+          bank_account_number?: string
+          bank_name?: string
+          city?: string
+          created_at?: string
+          drivers_license_url?: string | null
+          email?: string
+          full_name?: string
+          guarantor_address?: string | null
+          guarantor_name?: string
+          guarantor_phone?: string
+          guarantor_relationship?: string | null
+          id?: string
+          nin_url?: string | null
+          passport_photo_url?: string | null
+          phone?: string
+          roadworthiness_url?: string | null
+          state?: string
+          status?: Database["public"]["Enums"]["driver_application_status"]
+          updated_at?: string
+          vehicle_details?: string | null
+          vehicle_ownership?: Database["public"]["Enums"]["vehicle_ownership_type"]
+          vehicle_papers_url?: string | null
+          years_experience?: number
+        }
+        Relationships: []
+      }
       routes: {
         Row: {
           created_at: string | null
@@ -269,6 +356,12 @@ export type Database = {
     }
     Enums: {
       app_role: "admin" | "user"
+      driver_application_status:
+        | "pending"
+        | "approved"
+        | "rejected"
+        | "suspended"
+      vehicle_ownership_type: "own_sienna" | "own_sharon" | "partnership"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -397,6 +490,13 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["admin", "user"],
+      driver_application_status: [
+        "pending",
+        "approved",
+        "rejected",
+        "suspended",
+      ],
+      vehicle_ownership_type: ["own_sienna", "own_sharon", "partnership"],
     },
   },
 } as const
