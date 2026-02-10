@@ -10,6 +10,7 @@ import Contact from "./pages/Contact";
 import Confirmation from "./pages/Confirmation";
 import Wallet from "./pages/Wallet";
 import Auth from "./pages/Auth";
+import About from "./pages/About";
 import AdminLogin from "./pages/admin/AdminLogin";
 import AdminDashboard from "./pages/admin/AdminDashboard";
 import AdminBookings from "./pages/admin/AdminBookings";
@@ -26,6 +27,10 @@ import NotFound from "./pages/NotFound";
 import DriveWithUs from "./pages/driver/DriveWithUs";
 import DriverRequirements from "./pages/driver/DriverRequirements";
 import DriverApplication from "./pages/driver/DriverApplication";
+import Partnership from "./pages/driver/Partnership";
+import Safety from "./pages/driver/Safety";
+import DriverLogin from "./pages/driver/DriverLogin";
+import DriverDashboard from "./pages/driver/DriverDashboard";
 
 const queryClient = new QueryClient();
 
@@ -43,9 +48,14 @@ const App = () => (
           <Route path="/confirmation" element={<Confirmation />} />
           <Route path="/auth" element={<Auth />} />
           <Route path="/wallet" element={<Wallet />} />
+          <Route path="/about" element={<About />} />
           <Route path="/driver/drive-with-us" element={<DriveWithUs />} />
           <Route path="/driver/requirements" element={<DriverRequirements />} />
           <Route path="/driver/apply" element={<DriverApplication />} />
+          <Route path="/driver/partnership" element={<Partnership />} />
+          <Route path="/driver/safety" element={<Safety />} />
+          <Route path="/driver/login" element={<DriverLogin />} />
+          <Route path="/driver/dashboard" element={<DriverDashboard />} />
           <Route path="/admin" element={<AdminLogin />} />
           <Route path="/admin/login" element={<AdminLogin />} />
           <Route path="/admin/dashboard" element={<ProtectedAdminRoute><AdminDashboard /></ProtectedAdminRoute>} />
