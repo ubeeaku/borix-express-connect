@@ -75,6 +75,17 @@ const DriveWithUs = () => {
                 </button>
               </Link>
             </div>
+            <div className="flex flex-wrap items-center justify-center gap-4 mt-6">
+              <Link to="/driver/login" className="text-white/70 hover:text-accent text-sm font-semibold transition-colors underline underline-offset-4">
+                Already a driver? Sign in →
+              </Link>
+              <Link to="/driver/partnership" className="text-white/70 hover:text-accent text-sm font-semibold transition-colors underline underline-offset-4">
+                Partnership Programme
+              </Link>
+              <Link to="/driver/safety" className="text-white/70 hover:text-accent text-sm font-semibold transition-colors underline underline-offset-4">
+                Safety Policy
+              </Link>
+            </div>
           </motion.div>
         </div>
       </section>
