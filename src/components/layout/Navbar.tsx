@@ -8,8 +8,7 @@ import borixLogo from "@/assets/borix-logo-new.png";
 
 const navLinks = [
   { name: "Home", path: "/" },
-  { name: "Routes", path: "/routes" },
-  { name: "Book Now", path: "/booking" },
+  { name: "About Us", path: "/about" },
   { name: "Drive With Us", path: "/driver/drive-with-us" },
   { name: "Contact", path: "/contact" },
 ];
