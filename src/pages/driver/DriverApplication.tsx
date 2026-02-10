@@ -77,7 +77,7 @@ const DriverApplication = () => {
   const validateStep = () => {
     switch (step) {
       case 1:
-        if (!form.full_name || !form.phone || !form.email || !form.address || !form.state || !form.city) {
+        if (!form.full_name || !form.phone || !form.address || !form.state || !form.city) {
           toast({ title: "Please fill all required fields", variant: "destructive" });
           return false;
         }
