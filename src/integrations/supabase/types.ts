@@ -128,7 +128,7 @@ export type Database = {
           city: string
           created_at: string
           drivers_license_url: string | null
-          email: string
+          email: string | null
           full_name: string
           guarantor_address: string | null
           guarantor_name: string
@@ -156,7 +156,7 @@ export type Database = {
           city: string
           created_at?: string
           drivers_license_url?: string | null
-          email: string
+          email?: string | null
           full_name: string
           guarantor_address?: string | null
           guarantor_name: string
@@ -184,7 +184,7 @@ export type Database = {
           city?: string
           created_at?: string
           drivers_license_url?: string | null
-          email?: string
+          email?: string | null
           full_name?: string
           guarantor_address?: string | null
           guarantor_name?: string
@@ -204,6 +204,193 @@ export type Database = {
           years_experience?: number
         }
         Relationships: []
+      }
+      driver_earnings: {
+        Row: {
+          amount: number
+          created_at: string
+          description: string | null
+          driver_id: string
+          id: string
+          paid: boolean | null
+          paid_at: string | null
+          trip_id: string | null
+          type: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          description?: string | null
+          driver_id: string
+          id?: string
+          paid?: boolean | null
+          paid_at?: string | null
+          trip_id?: string | null
+          type?: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          description?: string | null
+          driver_id?: string
+          id?: string
+          paid?: boolean | null
+          paid_at?: string | null
+          trip_id?: string | null
+          type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "driver_earnings_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "driver_earnings_trip_id_fkey"
+            columns: ["trip_id"]
+            isOneToOne: false
+            referencedRelation: "driver_trips"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      driver_notifications: {
+        Row: {
+          created_at: string
+          driver_id: string | null
+          id: string
+          message: string
+          read: boolean | null
+          title: string
+          type: string
+        }
+        Insert: {
+          created_at?: string
+          driver_id?: string | null
+          id?: string
+          message: string
+          read?: boolean | null
+          title: string
+          type?: string
+        }
+        Update: {
+          created_at?: string
+          driver_id?: string | null
+          id?: string
+          message?: string
+          read?: boolean | null
+          title?: string
+          type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "driver_notifications_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      driver_trips: {
+        Row: {
+          accepted_at: string | null
+          completed_at: string | null
+          created_at: string
+          departure_time: string
+          driver_id: string
+          earnings: number | null
+          id: string
+          route_id: string
+          status: string
+          trip_date: string
+        }
+        Insert: {
+          accepted_at?: string | null
+          completed_at?: string | null
+          created_at?: string
+          departure_time: string
+          driver_id: string
+          earnings?: number | null
+          id?: string
+          route_id: string
+          status?: string
+          trip_date: string
+        }
+        Update: {
+          accepted_at?: string | null
+          completed_at?: string | null
+          created_at?: string
+          departure_time?: string
+          driver_id?: string
+          earnings?: number | null
+          id?: string
+          route_id?: string
+          status?: string
+          trip_date?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "driver_trips_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "driver_trips_route_id_fkey"
+            columns: ["route_id"]
+            isOneToOne: false
+            referencedRelation: "routes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      drivers: {
+        Row: {
+          application_id: string | null
+          created_at: string
+          email: string | null
+          full_name: string
+          id: string
+          phone: string
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          application_id?: string | null
+          created_at?: string
+          email?: string | null
+          full_name: string
+          id?: string
+          phone: string
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          application_id?: string | null
+          created_at?: string
+          email?: string | null
+          full_name?: string
+          id?: string
+          phone?: string
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "drivers_application_id_fkey"
+            columns: ["application_id"]
+            isOneToOne: false
+            referencedRelation: "driver_applications"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       routes: {
         Row: {
@@ -355,7 +542,7 @@ export type Database = {
       is_admin: { Args: { _user_id: string }; Returns: boolean }
     }
     Enums: {
-      app_role: "admin" | "user"
+      app_role: "admin" | "user" | "driver"
       driver_application_status:
         | "pending"
         | "approved"
@@ -489,7 +676,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      app_role: ["admin", "user"],
+      app_role: ["admin", "user", "driver"],
       driver_application_status: [
         "pending",
         "approved",

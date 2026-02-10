@@ -77,7 +77,7 @@ const DriverApplication = () => {
   const validateStep = () => {
     switch (step) {
       case 1:
-        if (!form.full_name || !form.phone || !form.email || !form.address || !form.state || !form.city) {
+        if (!form.full_name || !form.phone || !form.address || !form.state || !form.city) {
           toast({ title: "Please fill all required fields", variant: "destructive" });
           return false;
         }
@@ -220,7 +220,7 @@ const DriverApplication = () => {
                       <Input value={form.phone} onChange={(e) => updateForm("phone", e.target.value)} placeholder="+234..." className="mt-1" />
                     </div>
                     <div>
-                      <Label>Email Address *</Label>
+                      <Label>Email Address (optional)</Label>
                       <Input type="email" value={form.email} onChange={(e) => updateForm("email", e.target.value)} placeholder="email@example.com" className="mt-1" />
                     </div>
                   </div>

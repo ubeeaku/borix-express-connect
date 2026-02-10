@@ -34,6 +34,7 @@ export const Footer = () => {
             <ul className="space-y-3">
               {[
                 { name: "Home", path: "/" },
+                { name: "About Us", path: "/about" },
                 { name: "Our Routes", path: "/routes" },
                 { name: "Book a Ride", path: "/booking" },
                 { name: "Contact Us", path: "/contact" },
@@ -106,6 +107,7 @@ export const Footer = () => {
           <div className="flex gap-6 text-sm text-white/60">
             <a href="#" className="hover:text-white transition-colors">Privacy Policy</a>
             <a href="#" className="hover:text-white transition-colors">Terms of Service</a>
+            <Link to="/admin" className="hover:text-white transition-colors">Admin</Link>
           </div>
         </div>
       </div>

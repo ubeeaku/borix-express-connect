@@ -46,7 +46,7 @@ const requiredDocs = [
     icon: Mail,
     title: "Email Address",
     description: "A valid email address for account setup and notifications.",
-    required: true,
+    required: false,
   },
   {
     icon: MapPin,
