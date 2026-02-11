@@ -1,7 +1,8 @@
 import { useState, useEffect } from "react";
-import { User, Check, Car } from "lucide-react";
+import { User, Check, Car, ChevronDown, ChevronUp } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 
 interface SeatPickerProps {
   routeId: string;
@@ -12,11 +13,9 @@ interface SeatPickerProps {
   onSeatsChange: (seats: number[]) => void;
 }
 
-// 5 cars available, each with 5 passenger seats
 const TOTAL_CARS = 5;
 const SEATS_PER_CAR = 7;
 
-// Seat layout per car: 1 front (beside driver), 3 middle, 3 back
 const getCarLayout = (carIndex: number) => {
   const baseNumber = carIndex * SEATS_PER_CAR;
   return [
@@ -26,7 +25,6 @@ const getCarLayout = (carIndex: number) => {
   ];
 };
 
-// Get all seats for display in selected seats summary
 const getAllSeats = () => {
   const seats: { number: number; label: string; carIndex: number }[] = [];
   for (let i = 0; i < TOTAL_CARS; i++) {
@@ -40,6 +38,17 @@ const getAllSeats = () => {
   return seats;
 };
 
+// Helper: which car indices have selected seats
+const getCarIndicesWithSelections = (selectedSeats: number[]) => {
+  const allSeats = getAllSeats();
+  const indices = new Set<number>();
+  selectedSeats.forEach(seatNum => {
+    const found = allSeats.find(s => s.number === seatNum);
+    if (found) indices.add(found.carIndex);
+  });
+  return indices;
+};
+
 export const SeatPicker = ({
   routeId,
   date,
@@ -50,6 +59,18 @@ export const SeatPicker = ({
 }: SeatPickerProps) => {
   const [bookedSeats, setBookedSeats] = useState<number[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [expandedCars, setExpandedCars] = useState<Set<number>>(new Set(Array.from({ length: TOTAL_CARS }, (_, i) => i)));
+
+  // When seats are selected, collapse cars without selections
+  useEffect(() => {
+    if (selectedSeats.length > 0) {
+      const carsWithSelections = getCarIndicesWithSelections(selectedSeats);
+      setExpandedCars(carsWithSelections);
+    } else {
+      // All expanded when nothing selected
+      setExpandedCars(new Set(Array.from({ length: TOTAL_CARS }, (_, i) => i)));
+    }
+  }, [selectedSeats]);
 
   useEffect(() => {
     const fetchBookedSeats = async () => {
@@ -57,17 +78,14 @@ export const SeatPicker = ({
         setBookedSeats([]);
         return;
       }
-
       setIsLoading(true);
       try {
-        // Use the secure view that hides booking_id from public access
         const { data, error } = await supabase
           .from("available_seats_view")
           .select("seat_number")
           .eq("route_id", routeId)
           .eq("travel_date", date)
           .eq("departure_time", time);
-
         if (error) throw error;
         setBookedSeats(data?.map((s) => s.seat_number) || []);
       } catch (err) {
@@ -77,19 +95,16 @@ export const SeatPicker = ({
         setIsLoading(false);
       }
     };
-
     fetchBookedSeats();
   }, [routeId, date, time]);
 
   const handleSeatClick = (seatNumber: number) => {
     if (bookedSeats.includes(seatNumber)) return;
-
     if (selectedSeats.includes(seatNumber)) {
       onSeatsChange(selectedSeats.filter((s) => s !== seatNumber));
     } else if (selectedSeats.length < passengers) {
       onSeatsChange([...selectedSeats, seatNumber]);
     } else {
-      // Replace the first selected seat if at max capacity
       onSeatsChange([...selectedSeats.slice(1), seatNumber]);
     }
   };
@@ -100,8 +115,22 @@ export const SeatPicker = ({
     return "available";
   };
 
+  const toggleCar = (carIndex: number) => {
+    setExpandedCars(prev => {
+      const next = new Set(prev);
+      if (next.has(carIndex)) {
+        next.delete(carIndex);
+      } else {
+        next.add(carIndex);
+      }
+      return next;
+    });
+  };
+
+  const hasSelections = selectedSeats.length > 0;
+
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       <div className="flex items-center justify-between">
         <h3 className="font-semibold text-foreground">Select Your Seats</h3>
         <span className="text-sm text-muted-foreground">
@@ -109,20 +138,67 @@ export const SeatPicker = ({
         </span>
       </div>
 
-      {/* Cars grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {Array.from({ length: TOTAL_CARS }, (_, carIndex) => (
-          <CarVisualization
-            key={carIndex}
-            carIndex={carIndex}
-            layout={getCarLayout(carIndex)}
-            bookedSeats={bookedSeats}
-            selectedSeats={selectedSeats}
-            onSeatClick={handleSeatClick}
-            isLoading={isLoading}
-            getSeatStatus={getSeatStatus}
-          />
-        ))}
+      {/* Cars - collapsible */}
+      <div className="space-y-3">
+        {Array.from({ length: TOTAL_CARS }, (_, carIndex) => {
+          const layout = getCarLayout(carIndex);
+          const availableCount = layout.flatMap(r => r.seats).filter(s => getSeatStatus(s.number) === "available").length;
+          const selectedCount = layout.flatMap(r => r.seats).filter(s => getSeatStatus(s.number) === "selected").length;
+          const isOpen = expandedCars.has(carIndex);
+
+          return (
+            <div key={carIndex} className="bg-muted rounded-2xl overflow-hidden">
+              {/* Car header - always visible */}
+              <button
+                type="button"
+                onClick={() => toggleCar(carIndex)}
+                className="w-full flex items-center justify-between p-4 hover:bg-muted-foreground/5 transition-colors"
+              >
+                <div className="flex items-center gap-2">
+                  <Car className="w-4 h-4 text-primary" />
+                  <span className="font-medium text-sm">Car {carIndex + 1}</span>
+                  {selectedCount > 0 && (
+                    <span className="bg-accent text-accent-foreground text-xs px-2 py-0.5 rounded-full font-medium">
+                      {selectedCount} selected
+                    </span>
+                  )}
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-xs text-muted-foreground">{availableCount} available</span>
+                  {isOpen ? <ChevronUp className="w-4 h-4 text-muted-foreground" /> : <ChevronDown className="w-4 h-4 text-muted-foreground" />}
+                </div>
+              </button>
+
+              {/* Car body - collapsible */}
+              {isOpen && (
+                <div className="px-4 pb-4">
+                  <div className="relative mx-auto max-w-[140px]">
+                    <div className="flex justify-between items-center mb-2 px-2">
+                      <div className="w-10 h-10 rounded-lg bg-muted-foreground/20 flex items-center justify-center">
+                        <span className="text-[10px] text-muted-foreground">Driver</span>
+                      </div>
+                      {layout[0].seats.map((seat) => (
+                        <SeatButton key={seat.number} seat={seat} status={getSeatStatus(seat.number)} onClick={() => handleSeatClick(seat.number)} disabled={isLoading} compact />
+                      ))}
+                    </div>
+                    <div className="h-2 border-t border-dashed border-border" />
+                    <div className="flex justify-center gap-2 my-2">
+                      {layout[1].seats.map((seat) => (
+                        <SeatButton key={seat.number} seat={seat} status={getSeatStatus(seat.number)} onClick={() => handleSeatClick(seat.number)} disabled={isLoading} compact />
+                      ))}
+                    </div>
+                    <div className="h-2 border-t border-dashed border-border" />
+                    <div className="flex justify-center gap-2 mt-2">
+                      {layout[2].seats.map((seat) => (
+                        <SeatButton key={seat.number} seat={seat} status={getSeatStatus(seat.number)} onClick={() => handleSeatClick(seat.number)} disabled={isLoading} compact />
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          );
+        })}
       </div>
 
       {/* Legend */}
@@ -158,97 +234,6 @@ export const SeatPicker = ({
           </p>
         </div>
       )}
-    </div>
-  );
-};
-
-interface CarVisualizationProps {
-  carIndex: number;
-  layout: { row: number; label: string; seats: { number: number; label: string }[] }[];
-  bookedSeats: number[];
-  selectedSeats: number[];
-  onSeatClick: (seatNumber: number) => void;
-  isLoading: boolean;
-  getSeatStatus: (seatNumber: number) => "available" | "selected" | "booked";
-}
-
-const CarVisualization = ({
-  carIndex,
-  layout,
-  onSeatClick,
-  isLoading,
-  getSeatStatus,
-}: CarVisualizationProps) => {
-  const availableCount = layout
-    .flatMap((r) => r.seats)
-    .filter((s) => getSeatStatus(s.number) === "available").length;
-
-  return (
-    <div className="bg-muted rounded-2xl p-4">
-      {/* Car header */}
-      <div className="flex items-center justify-between mb-3">
-        <div className="flex items-center gap-2">
-          <Car className="w-4 h-4 text-primary" />
-          <span className="font-medium text-sm">Car {carIndex + 1}</span>
-        </div>
-        <span className="text-xs text-muted-foreground">
-          {availableCount} available
-        </span>
-      </div>
-
-      {/* Car body */}
-      <div className="relative mx-auto max-w-[140px]">
-        {/* Driver area + Front seat */}
-        <div className="flex justify-between items-center mb-2 px-2">
-          <div className="w-10 h-10 rounded-lg bg-muted-foreground/20 flex items-center justify-center">
-            <span className="text-[10px] text-muted-foreground">Driver</span>
-          </div>
-          {layout[0].seats.map((seat) => (
-            <SeatButton
-              key={seat.number}
-              seat={seat}
-              status={getSeatStatus(seat.number)}
-              onClick={() => onSeatClick(seat.number)}
-              disabled={isLoading}
-              compact
-            />
-          ))}
-        </div>
-
-        {/* Divider */}
-        <div className="h-2 border-t border-dashed border-border" />
-
-        {/* Middle row - 2 seats */}
-        <div className="flex justify-center gap-2 my-2">
-          {layout[1].seats.map((seat) => (
-            <SeatButton
-              key={seat.number}
-              seat={seat}
-              status={getSeatStatus(seat.number)}
-              onClick={() => onSeatClick(seat.number)}
-              disabled={isLoading}
-              compact
-            />
-          ))}
-        </div>
-
-        {/* Divider */}
-        <div className="h-2 border-t border-dashed border-border" />
-
-        {/* Back row - 2 seats */}
-        <div className="flex justify-center gap-2 mt-2">
-          {layout[2].seats.map((seat) => (
-            <SeatButton
-              key={seat.number}
-              seat={seat}
-              status={getSeatStatus(seat.number)}
-              onClick={() => onSeatClick(seat.number)}
-              disabled={isLoading}
-              compact
-            />
-          ))}
-        </div>
-      </div>
     </div>
   );
 };
