@@ -88,6 +88,8 @@ const AdminDriverApplications = () => {
 
   const updateStatus = async (id: string, status: string) => {
     setUpdating(true);
+    const app = applications.find(a => a.id === id);
+    
     const { error } = await supabase
       .from("driver_applications")
       .update({ status, admin_notes: adminNotes || null } as any)
@@ -97,6 +99,37 @@ const AdminDriverApplications = () => {
       toast({ title: "Failed to update status", variant: "destructive" });
     } else {
       toast({ title: `Application ${status}` });
+      
+      // Send SMS notification to the applicant
+      if (app?.phone) {
+        const smsMessages: Record<string, string> = {
+          approved: `Congratulations ${app.full_name}! Your Borix Express driver application has been approved. You will receive login details shortly.`,
+          rejected: `Dear ${app.full_name}, unfortunately your Borix Express driver application was not approved at this time. Please contact us for more info.`,
+          suspended: `Dear ${app.full_name}, your Borix Express driver account has been suspended. Please contact admin for details.`,
+        };
+        
+        if (smsMessages[status]) {
+          try {
+            const { data: { session } } = await supabase.auth.getSession();
+            await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/send-driver-sms`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${session?.access_token}`,
+              },
+              body: JSON.stringify({
+                phone: app.phone,
+                message: smsMessages[status],
+                type: `application_${status}`,
+              }),
+            });
+          } catch (smsErr) {
+            console.error('SMS notification failed:', smsErr);
+            // Don't block the status update for SMS failure
+          }
+        }
+      }
+      
       fetchApplications();
       setDetailOpen(false);
     }
