@@ -7,7 +7,7 @@ const ALLOWED_ORIGINS = ['lovable.app', 'lovable.dev', 'lovableproject.com', 've
 
 function getCorsHeaders(req: Request): Record<string, string> {
   const origin = req.headers.get('origin') || '';
-  let allowedOrigin = 'https://lovable.app';
+  let allowedOrigin = 'https://borixexpress.com';
   try {
     if (origin) {
       const url = new URL(origin);
