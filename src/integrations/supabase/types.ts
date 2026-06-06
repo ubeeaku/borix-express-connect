@@ -464,7 +464,7 @@ export type Database = {
           status: string
           total_trips: number
           updated_at: string
-          user_id: string
+          user_id: string | null
         }
         Insert: {
           application_id?: string | null
@@ -478,7 +478,7 @@ export type Database = {
           status?: string
           total_trips?: number
           updated_at?: string
-          user_id: string
+          user_id?: string | null
         }
         Update: {
           application_id?: string | null
@@ -492,7 +492,7 @@ export type Database = {
           status?: string
           total_trips?: number
           updated_at?: string
-          user_id?: string
+          user_id?: string | null
         }
         Relationships: [
           {
