@@ -7,9 +7,7 @@ interface WalletPaymentParams {
   amount: number;
   name: string;
   phone: string;
-  routeId: string;
-  date: string;
-  time: string;
+  departureId: string;
   passengers: string;
   seats: number[];
   nextOfKinName: string;

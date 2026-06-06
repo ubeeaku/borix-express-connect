@@ -6,9 +6,7 @@ interface PaystackInitParams {
   amount: number;
   name: string;
   phone: string;
-  routeId: string;
-  date: string;
-  time: string;
+  departureId: string;
   passengers: string;
   seats: number[];
   nextOfKinName: string;
@@ -38,20 +36,10 @@ export const usePaystack = () => {
   const initializePayment = async (params: PaystackInitParams): Promise<PaystackResponse> => {
     setIsLoading(true);
     setError(null);
-
     try {
-      const { data, error: fnError } = await supabase.functions.invoke('paystack-initialize', {
-        body: params,
-      });
-
-      if (fnError) {
-        throw new Error(fnError.message);
-      }
-
-      if (!data.success) {
-        throw new Error(data.error || 'Payment initialization failed');
-      }
-
+      const { data, error: fnError } = await supabase.functions.invoke('paystack-initialize', { body: params });
+      if (fnError) throw new Error(fnError.message);
+      if (!data.success) throw new Error(data.error || 'Payment initialization failed');
       return data;
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Payment initialization failed';
@@ -65,20 +53,10 @@ export const usePaystack = () => {
   const verifyPayment = async (reference: string): Promise<VerifyResponse> => {
     setIsLoading(true);
     setError(null);
-
     try {
-      const { data, error: fnError } = await supabase.functions.invoke('paystack-verify', {
-        body: { reference },
-      });
-
-      if (fnError) {
-        throw new Error(fnError.message);
-      }
-
-      if (!data.success) {
-        throw new Error(data.error || 'Payment verification failed');
-      }
-
+      const { data, error: fnError } = await supabase.functions.invoke('paystack-verify', { body: { reference } });
+      if (fnError) throw new Error(fnError.message);
+      if (!data.success) throw new Error(data.error || 'Payment verification failed');
       return data;
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Payment verification failed';
@@ -89,10 +67,5 @@ export const usePaystack = () => {
     }
   };
 
-  return {
-    initializePayment,
-    verifyPayment,
-    isLoading,
-    error,
-  };
+  return { initializePayment, verifyPayment, isLoading, error };
 };

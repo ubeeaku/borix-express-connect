@@ -18,6 +18,7 @@ export type Database = {
         Row: {
           booking_id: string
           created_at: string
+          departure_id: string | null
           departure_time: string
           id: string
           route_id: string
@@ -27,6 +28,7 @@ export type Database = {
         Insert: {
           booking_id: string
           created_at?: string
+          departure_id?: string | null
           departure_time: string
           id?: string
           route_id: string
@@ -36,6 +38,7 @@ export type Database = {
         Update: {
           booking_id?: string
           created_at?: string
+          departure_id?: string | null
           departure_time?: string
           id?: string
           route_id?: string
@@ -51,6 +54,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "booked_seats_departure_id_fkey"
+            columns: ["departure_id"]
+            isOneToOne: false
+            referencedRelation: "departures"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "booked_seats_route_id_fkey"
             columns: ["route_id"]
             isOneToOne: false
@@ -63,7 +73,9 @@ export type Database = {
         Row: {
           booking_reference: string
           created_at: string | null
+          departure_id: string | null
           departure_time: string
+          driver_amount: number | null
           id: string
           next_of_kin_name: string | null
           next_of_kin_phone: string | null
@@ -72,6 +84,7 @@ export type Database = {
           passenger_name: string
           passenger_phone: string
           payment_status: string
+          platform_commission: number | null
           route_id: string
           total_amount: number
           travel_date: string
@@ -79,7 +92,9 @@ export type Database = {
         Insert: {
           booking_reference: string
           created_at?: string | null
+          departure_id?: string | null
           departure_time: string
+          driver_amount?: number | null
           id?: string
           next_of_kin_name?: string | null
           next_of_kin_phone?: string | null
@@ -88,6 +103,7 @@ export type Database = {
           passenger_name: string
           passenger_phone: string
           payment_status?: string
+          platform_commission?: number | null
           route_id: string
           total_amount: number
           travel_date: string
@@ -95,7 +111,9 @@ export type Database = {
         Update: {
           booking_reference?: string
           created_at?: string | null
+          departure_id?: string | null
           departure_time?: string
+          driver_amount?: number | null
           id?: string
           next_of_kin_name?: string | null
           next_of_kin_phone?: string | null
@@ -104,16 +122,101 @@ export type Database = {
           passenger_name?: string
           passenger_phone?: string
           payment_status?: string
+          platform_commission?: number | null
           route_id?: string
           total_amount?: number
           travel_date?: string
         }
         Relationships: [
           {
+            foreignKeyName: "bookings_departure_id_fkey"
+            columns: ["departure_id"]
+            isOneToOne: false
+            referencedRelation: "departures"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "bookings_route_id_fkey"
             columns: ["route_id"]
             isOneToOne: false
             referencedRelation: "routes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      departures: {
+        Row: {
+          commission_amount: number
+          created_at: string
+          departure_time: string
+          driver_id: string
+          id: string
+          park_id: string
+          price: number
+          route_id: string
+          status: string
+          total_seats: number
+          travel_date: string
+          updated_at: string
+          vehicle_id: string
+        }
+        Insert: {
+          commission_amount?: number
+          created_at?: string
+          departure_time: string
+          driver_id: string
+          id?: string
+          park_id: string
+          price: number
+          route_id: string
+          status?: string
+          total_seats: number
+          travel_date: string
+          updated_at?: string
+          vehicle_id: string
+        }
+        Update: {
+          commission_amount?: number
+          created_at?: string
+          departure_time?: string
+          driver_id?: string
+          id?: string
+          park_id?: string
+          price?: number
+          route_id?: string
+          status?: string
+          total_seats?: number
+          travel_date?: string
+          updated_at?: string
+          vehicle_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "departures_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "departures_park_id_fkey"
+            columns: ["park_id"]
+            isOneToOne: false
+            referencedRelation: "parks"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "departures_route_id_fkey"
+            columns: ["route_id"]
+            isOneToOne: false
+            referencedRelation: "routes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "departures_vehicle_id_fkey"
+            columns: ["vehicle_id"]
+            isOneToOne: false
+            referencedRelation: "vehicles"
             referencedColumns: ["id"]
           },
         ]
@@ -356,9 +459,12 @@ export type Database = {
           full_name: string
           id: string
           phone: string
+          profile_photo_url: string | null
+          rating: number | null
           status: string
+          total_trips: number
           updated_at: string
-          user_id: string
+          user_id: string | null
         }
         Insert: {
           application_id?: string | null
@@ -367,9 +473,12 @@ export type Database = {
           full_name: string
           id?: string
           phone: string
+          profile_photo_url?: string | null
+          rating?: number | null
           status?: string
+          total_trips?: number
           updated_at?: string
-          user_id: string
+          user_id?: string | null
         }
         Update: {
           application_id?: string | null
@@ -378,9 +487,12 @@ export type Database = {
           full_name?: string
           id?: string
           phone?: string
+          profile_photo_url?: string | null
+          rating?: number | null
           status?: string
+          total_trips?: number
           updated_at?: string
-          user_id?: string
+          user_id?: string | null
         }
         Relationships: [
           {
@@ -391,6 +503,60 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      parks: {
+        Row: {
+          address: string | null
+          city: string
+          contact_phone: string | null
+          created_at: string
+          id: string
+          name: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          address?: string | null
+          city: string
+          contact_phone?: string | null
+          created_at?: string
+          id?: string
+          name: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          address?: string | null
+          city?: string
+          contact_phone?: string | null
+          created_at?: string
+          id?: string
+          name?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      platform_settings: {
+        Row: {
+          created_at: string
+          default_commission_amount: number
+          id: boolean
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          default_commission_amount?: number
+          id?: boolean
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          default_commission_amount?: number
+          id?: boolean
+          updated_at?: string
+        }
+        Relationships: []
       }
       routes: {
         Row: {
@@ -416,6 +582,41 @@ export type Database = {
         }
         Relationships: []
       }
+      seat_holds: {
+        Row: {
+          created_at: string
+          departure_id: string
+          expires_at: string
+          id: string
+          seat_number: number
+          session_id: string
+        }
+        Insert: {
+          created_at?: string
+          departure_id: string
+          expires_at?: string
+          id?: string
+          seat_number: number
+          session_id: string
+        }
+        Update: {
+          created_at?: string
+          departure_id?: string
+          expires_at?: string
+          id?: string
+          seat_number?: number
+          session_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "seat_holds_departure_id_fkey"
+            columns: ["departure_id"]
+            isOneToOne: false
+            referencedRelation: "departures"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_roles: {
         Row: {
           created_at: string | null
@@ -436,6 +637,53 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      vehicles: {
+        Row: {
+          capacity: number
+          color: string | null
+          created_at: string
+          driver_id: string
+          id: string
+          plate_number: string
+          status: string
+          updated_at: string
+          vehicle_type: string
+          year: number | null
+        }
+        Insert: {
+          capacity: number
+          color?: string | null
+          created_at?: string
+          driver_id: string
+          id?: string
+          plate_number: string
+          status?: string
+          updated_at?: string
+          vehicle_type: string
+          year?: number | null
+        }
+        Update: {
+          capacity?: number
+          color?: string | null
+          created_at?: string
+          driver_id?: string
+          id?: string
+          plate_number?: string
+          status?: string
+          updated_at?: string
+          vehicle_type?: string
+          year?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vehicles_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       wallet_transactions: {
         Row: {
@@ -529,6 +777,14 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      departure_taken_seats: {
+        Row: {
+          departure_id: string | null
+          seat_number: number | null
+          source: string | null
+        }
+        Relationships: []
       }
     }
     Functions: {
