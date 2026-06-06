@@ -2,11 +2,12 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { z } from "npm:zod@3.22.4";
 
-const ALLOWED_ORIGINS = ['lovable.app', 'lovable.dev', 'lovableproject.com'];
+const ALLOWED_ORIGINS = ['lovable.app', 'lovable.dev', 'lovableproject.com', 'vercel.app',
+  'borixexpress.com'];
 
 function getCorsHeaders(req: Request): Record<string, string> {
   const origin = req.headers.get('origin') || '';
-  let allowedOrigin = 'https://lovable.app';
+  let allowedOrigin = 'https://borixexpress.com';
   try {
     if (origin) {
       const url = new URL(origin);
