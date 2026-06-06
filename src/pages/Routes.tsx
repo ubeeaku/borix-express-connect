@@ -144,7 +144,7 @@ const Routes = () => {
                         ₦{route.price.toLocaleString()}
                       </p>
                     </div>
-                    <Link to={`/booking?route=${route.id}`}>
+                    <Link to={`/booking?origin=${encodeURIComponent(route.origin)}&destination=${encodeURIComponent(route.destination)}`}>
                       <Button variant="accent">
                         Book Now
                         <ArrowRight className="w-4 h-4" />
