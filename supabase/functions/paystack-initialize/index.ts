@@ -94,6 +94,15 @@ serve(async (req) => {
 
     const reference = `BRX-${crypto.randomUUID().replace(/-/g, '').substring(0, 12).toUpperCase()}`;
     const passengersInt = parseInt(passengers);
+    if (!departure.price || departure.price <= 0) {
+      return new Response(JSON.stringify({ success: false, error: 'Departure price unavailable' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+    }
+    const amount = Number(departure.price) * passengersInt;
+    if (!Number.isFinite(amount) || amount <= 0 || amount > 10000000) {
+      return new Response(JSON.stringify({ success: false, error: 'Invalid booking amount' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+    }
     const commission = (departure.commission_amount ?? 0) * passengersInt;
     const driverAmount = amount - commission;
 
