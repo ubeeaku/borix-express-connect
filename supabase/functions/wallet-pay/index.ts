@@ -63,7 +63,7 @@ serve(async (req) => {
       return new Response(JSON.stringify({ success: false, error: 'Invalid input data' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     }
-    const { email, amount, name, phone, departureId, passengers, seats, nextOfKinName, nextOfKinPhone } = input;
+    const { email, name, phone, departureId, passengers, seats, nextOfKinName, nextOfKinPhone } = input;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
     const { data: departure, error: depErr } = await supabase
