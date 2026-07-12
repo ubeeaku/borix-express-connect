@@ -57,7 +57,7 @@ serve(async (req) => {
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     }
 
-    const { email, amount, name, phone, departureId, passengers, seats, nextOfKinName, nextOfKinPhone } = input;
+    const { email, name, phone, departureId, passengers, seats, nextOfKinName, nextOfKinPhone } = input;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
     // Look up departure (must be scheduled/boarding)
