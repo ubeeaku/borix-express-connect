@@ -24,7 +24,6 @@ function getCorsHeaders(req: Request): Record<string, string> {
 
 const WalletPaySchema = z.object({
   email: z.string().email().max(255),
-  amount: z.number().positive().max(10000000),
   name: z.string().min(2).max(100),
   phone: z.string().regex(/^\+?[0-9]{10,15}$/),
   departureId: z.string().uuid(),
