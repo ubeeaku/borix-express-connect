@@ -85,6 +85,17 @@ serve(async (req) => {
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     }
 
+    if (!departure.price || Number(departure.price) <= 0) {
+      return new Response(JSON.stringify({ success: false, error: 'Departure price unavailable' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+    }
+    const passengersIntEarly = parseInt(passengers);
+    const amount = Number(departure.price) * passengersIntEarly;
+    if (!Number.isFinite(amount) || amount <= 0 || amount > 10000000) {
+      return new Response(JSON.stringify({ success: false, error: 'Invalid booking amount' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+    }
+
     const { data: wallet, error: walletErr } = await supabase
       .from('wallets').select('id, balance').eq('user_id', user.id).single();
     if (walletErr || !wallet) {
