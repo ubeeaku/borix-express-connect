@@ -26,7 +26,6 @@ function getCorsHeaders(req: Request): Record<string, string> {
 
 const InitSchema = z.object({
   email: z.string().email().max(255),
-  amount: z.number().positive().max(10000000),
   name: z.string().min(2).max(100),
   phone: z.string().regex(/^\+?[0-9]{10,15}$/),
   departureId: z.string().uuid(),
@@ -58,7 +57,7 @@ serve(async (req) => {
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     }
 
-    const { email, amount, name, phone, departureId, passengers, seats, nextOfKinName, nextOfKinPhone } = input;
+    const { email, name, phone, departureId, passengers, seats, nextOfKinName, nextOfKinPhone } = input;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
     // Look up departure (must be scheduled/boarding)
@@ -95,6 +94,15 @@ serve(async (req) => {
 
     const reference = `BRX-${crypto.randomUUID().replace(/-/g, '').substring(0, 12).toUpperCase()}`;
     const passengersInt = parseInt(passengers);
+    if (!departure.price || departure.price <= 0) {
+      return new Response(JSON.stringify({ success: false, error: 'Departure price unavailable' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+    }
+    const amount = Number(departure.price) * passengersInt;
+    if (!Number.isFinite(amount) || amount <= 0 || amount > 10000000) {
+      return new Response(JSON.stringify({ success: false, error: 'Invalid booking amount' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+    }
     const commission = (departure.commission_amount ?? 0) * passengersInt;
     const driverAmount = amount - commission;
 
