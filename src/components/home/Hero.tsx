@@ -1,7 +1,8 @@
 import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
-import { ArrowRight, Shield, Clock, Star } from "lucide-react";
+import { ArrowRight, Shield, Clock, Star, Users, MapPin, TrendingUp, Tag } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import heroBus from "@/assets/hero-bus.jpg.asset.json";
 
 export const Hero = () => {
   return (
@@ -12,13 +13,15 @@ export const Hero = () => {
         <div className="absolute bottom-20 right-10 w-96 h-96 bg-accent/50 rounded-full blur-3xl" />
       </div>
 
-      {/* Grid Pattern */}
-      <div 
-        className="absolute inset-0 opacity-5"
-        style={{
-          backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='1'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`,
-        }}
-      />
+      {/* Mobile hero background photo */}
+      <div className="absolute inset-0 lg:hidden">
+        <img
+          src={heroBus.url}
+          alt="Borix Express coach"
+          className="w-full h-full object-cover opacity-25"
+        />
+        <div className="absolute inset-0 bg-gradient-to-b from-primary/80 via-primary/70 to-primary" />
+      </div>
 
       <div className="container-custom relative z-10 pt-24 pb-12">
         <div className="grid lg:grid-cols-2 gap-12 items-center">
@@ -45,7 +48,7 @@ export const Hero = () => {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.3 }}
-              className="text-4xl md:text-5xl lg:text-6xl font-extrabold text-white leading-tight mb-6"
+              className="text-4xl md:text-5xl lg:text-6xl font-extrabold text-white leading-tight mb-4"
             >
               Reliable Intercity{" "}
               <span className="text-accent">Transport</span> Across Nigeria
@@ -55,11 +58,22 @@ export const Hero = () => {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.4 }}
-              className="text-lg md:text-xl text-white/80 mb-8 max-w-xl mx-auto lg:mx-0"
+              className="text-base md:text-lg text-white/80 mb-6 max-w-xl mx-auto lg:mx-0"
             >
-              Travel safely and comfortably between cities with Borix Express. 
-              Book your seat in minutes and enjoy a stress-free journey.
+              Reserve a seat with a specific driver and park in minutes.
             </motion.p>
+
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.45 }}
+              className="inline-flex items-center gap-2 bg-accent/15 border border-accent/30 rounded-full px-4 py-1.5 mb-6"
+            >
+              <Tag className="w-4 h-4 text-accent" />
+              <span className="text-white text-sm font-medium">
+                From <span className="text-accent font-bold">₦13,000</span> · Jos ↔ Abuja
+              </span>
+            </motion.div>
 
             <motion.div
               initial={{ opacity: 0, y: 20 }}
@@ -85,16 +99,17 @@ export const Hero = () => {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.6 }}
-              className="grid grid-cols-3 gap-6 mt-12 pt-8 border-t border-white/10"
+              className="grid grid-cols-3 gap-2 mt-12 pt-8 border-t border-white/10 divide-x divide-white/10"
             >
               {[
-                { value: "50K+", label: "Happy Customers" },
-                { value: "20+", label: "Routes" },
-                { value: "99%", label: "On-time Rate" },
+                { icon: Users, value: "50K+", label: "Happy Customers" },
+                { icon: MapPin, value: "20+", label: "Routes" },
+                { icon: TrendingUp, value: "99%", label: "On-time Rate" },
               ].map((stat, index) => (
-                <div key={index} className="text-center lg:text-left">
-                  <p className="text-2xl md:text-3xl font-bold text-accent">{stat.value}</p>
-                  <p className="text-sm text-white/60">{stat.label}</p>
+                <div key={index} className="px-2 text-center lg:text-left first:pl-0">
+                  <stat.icon className="w-5 h-5 text-accent mb-1 mx-auto lg:mx-0" />
+                  <p className="text-2xl md:text-3xl font-bold text-accent leading-none">{stat.value}</p>
+                  <p className="text-xs md:text-sm text-white/60 mt-1">{stat.label}</p>
                 </div>
               ))}
             </motion.div>
@@ -111,8 +126,10 @@ export const Hero = () => {
               {/* Main Image Container */}
               <div className="relative z-10 rounded-3xl overflow-hidden shadow-2xl">
                 <img
-                  src="https://images.unsplash.com/photo-1544620347-c4fd4a3d5957?w=800&q=80"
-                  alt="Modern bus travel"
+                  src={heroBus.url}
+                  alt="Borix Express intercity coach on the highway at sunset"
+                  width={1600}
+                  height={1200}
                   className="w-full h-[500px] object-cover"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-primary/60 to-transparent" />
