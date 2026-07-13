@@ -3,8 +3,10 @@ import { Link } from "react-router-dom";
 import { ArrowRight, Shield, Clock, Star, Users, MapPin, TrendingUp, Tag } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import heroBus from "@/assets/hero-bus.jpg.asset.json";
+import { useMinRoutePrice } from "@/hooks/useMinRoutePrice";
 
 export const Hero = () => {
+  const { price, route } = useMinRoutePrice();
   return (
     <section className="relative min-h-screen flex items-center bg-primary overflow-hidden">
       {/* Background Pattern */}
