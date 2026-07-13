@@ -127,7 +127,7 @@ export const Features = () => {
               <p className="text-white/80 mb-2">
                 Serving major Nigerian cities with dedicated parks and scheduled departures.
               </p>
-              <p className="text-accent font-semibold text-sm">Fares from ₦13,000</p>
+              <p className="text-accent font-semibold text-sm">Fares from ₦{price.toLocaleString()}</p>
             </div>
             <ul className="grid grid-cols-2 gap-3">
               {cities.map((city) => (
