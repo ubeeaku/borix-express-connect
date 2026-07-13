@@ -1,6 +1,7 @@
 import { motion } from "framer-motion";
 import { Shield, Clock, Armchair, CreditCard, MapPin, Headphones, CheckCircle2 } from "lucide-react";
 import busInterior from "@/assets/bus-interior.jpg.asset.json";
+import { useMinRoutePrice } from "@/hooks/useMinRoutePrice";
 
 const features = [
   {
