@@ -39,7 +39,7 @@ const itemVariants = {
 };
 
 export const Features = () => {
-  return (
+  const { price } = useMinRoutePrice();
     <section className="section-padding bg-gradient-to-b from-background to-muted/40">
       <div className="container-custom">
         <motion.div
