@@ -1,6 +1,7 @@
 import { motion } from "framer-motion";
 import { Shield, Clock, Armchair, CreditCard, MapPin, Headphones, CheckCircle2 } from "lucide-react";
 import busInterior from "@/assets/bus-interior.jpg.asset.json";
+import { useMinRoutePrice } from "@/hooks/useMinRoutePrice";
 
 const features = [
   {
@@ -38,6 +39,7 @@ const itemVariants = {
 };
 
 export const Features = () => {
+  const { price } = useMinRoutePrice();
   return (
     <section className="section-padding bg-gradient-to-b from-background to-muted/40">
       <div className="container-custom">
@@ -125,7 +127,7 @@ export const Features = () => {
               <p className="text-white/80 mb-2">
                 Serving major Nigerian cities with dedicated parks and scheduled departures.
               </p>
-              <p className="text-accent font-semibold text-sm">Fares from ₦13,000</p>
+              <p className="text-accent font-semibold text-sm">Fares from ₦{price.toLocaleString()}</p>
             </div>
             <ul className="grid grid-cols-2 gap-3">
               {cities.map((city) => (
