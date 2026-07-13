@@ -73,7 +73,8 @@ export const Hero = () => {
             >
               <Tag className="w-4 h-4 text-accent" />
               <span className="text-white text-sm font-medium">
-                From <span className="text-accent font-bold">₦13,000</span> · Jos ↔ Abuja
+                From <span className="text-accent font-bold">₦{price.toLocaleString()}</span>
+                {route ? ` · ${route.origin} ↔ ${route.destination}` : ""}
               </span>
             </motion.div>
 
