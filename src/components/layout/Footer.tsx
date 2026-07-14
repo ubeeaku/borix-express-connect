@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { Phone, Mail, MapPin, Facebook, Twitter, Instagram, ChevronDown } from "lucide-react";
-import borixLogo from "@/assets/borix-logo-new.png";
+import borixLogo from "@/assets/borix-logo-white.png";
 
 type Section = "links" | "routes" | null;
 
