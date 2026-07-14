@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import {
+  Bus,
   LayoutDashboard,
   MapPin,
   Calendar,
@@ -109,7 +110,7 @@ const AdminDashboard = () => {
           {/* Logo */}
           <div className="p-6 border-b border-white/10">
             <Link to="/" className="flex items-center">
-              <img src={borixLogo} alt="Borix Express" className="h-12 w-auto" />
+              <img src={borixLogo.url} alt="Borix Express" className="h-12 w-auto" />
             </Link>
           </div>
 

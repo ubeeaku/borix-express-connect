@@ -176,7 +176,7 @@ const DriverDashboard = () => {
         <div className="flex flex-col h-full">
           <div className="p-6 border-b border-white/10">
             <Link to="/" className="flex items-center">
-              <img src={borixLogo} alt="Borix Express" className="h-12 w-auto" />
+              <img src={borixLogo.url} alt="Borix Express" className="h-12 w-auto" />
             </Link>
           </div>
           <div className="p-4 border-b border-white/10">

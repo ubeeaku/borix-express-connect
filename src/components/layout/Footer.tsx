@@ -17,7 +17,7 @@ export const Footer = () => {
           {/* Brand */}
           <div className="space-y-4">
             <Link to="/" className="flex items-center">
-              <img src={borixLogo} alt="Borix Express" className="h-14 w-auto" />
+              <img src={borixLogo.url} alt="Borix Express" className="h-14 w-auto" />
             </Link>
             <p className="text-white/70 text-sm leading-relaxed">
               Nigeria's most reliable intercity transport service. Travel safely, comfortably, and on time.
