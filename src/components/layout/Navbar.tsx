@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Menu, X, Phone, Wallet, LogIn, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
-import borixLogo from "@/assets/borix-logo-new.png";
+import borixLogo from "@/assets/borix-logo-dark.png.asset.json";
 
 const navLinks = [
   { name: "Home", path: "/" },

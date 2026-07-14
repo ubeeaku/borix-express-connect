@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
-import borixLogo from "@/assets/borix-logo-new.png";
+import borixLogo from "@/assets/borix-logo-white.png.asset.json";
 
 type Driver = {
   id: string;
