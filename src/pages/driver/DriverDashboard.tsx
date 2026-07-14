@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
-import borixLogo from "@/assets/borix-logo-white.png.asset.json";
+import borixLogo from "@/assets/borix-logo-white.png";
 
 type Driver = {
   id: string;
@@ -176,7 +176,7 @@ const DriverDashboard = () => {
         <div className="flex flex-col h-full">
           <div className="p-6 border-b border-white/10">
             <Link to="/" className="flex items-center">
-              <img src={borixLogo.url} alt="Borix Express" className="h-12 w-auto" />
+              <img src={borixLogo} alt="Borix Express" className="h-12 w-auto" />
             </Link>
           </div>
           <div className="p-4 border-b border-white/10">

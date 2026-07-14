@@ -22,7 +22,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAdminAuth } from "@/hooks/useAdminAuth";
-import borixLogo from "@/assets/borix-logo-white.png.asset.json";
+import borixLogo from "@/assets/borix-logo-white.png";
 
 const sidebarItems = [
   { name: "Dashboard", icon: LayoutDashboard, path: "/admin/dashboard" },
@@ -110,7 +110,7 @@ const AdminDashboard = () => {
           {/* Logo */}
           <div className="p-6 border-b border-white/10">
             <Link to="/" className="flex items-center">
-              <img src={borixLogo.url} alt="Borix Express" className="h-12 w-auto" />
+              <img src={borixLogo} alt="Borix Express" className="h-12 w-auto" />
             </Link>
           </div>
 

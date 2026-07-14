@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { Phone, Mail, MapPin, Facebook, Twitter, Instagram, ChevronDown } from "lucide-react";
-import borixLogo from "@/assets/borix-logo-white.png.asset.json";
+import borixLogo from "@/assets/borix-logo-white.png";
 
 type Section = "links" | "routes" | null;
 
@@ -17,7 +17,7 @@ export const Footer = () => {
           {/* Brand */}
           <div className="space-y-4">
             <Link to="/" className="flex items-center">
-              <img src={borixLogo.url} alt="Borix Express" className="h-14 w-auto" />
+              <img src={borixLogo} alt="Borix Express" className="h-14 w-auto" />
             </Link>
             <p className="text-white/70 text-sm leading-relaxed">
               Nigeria's most reliable intercity transport service. Travel safely, comfortably, and on time.
