@@ -26,7 +26,7 @@ const features = [
   },
 ];
 
-const cities = ["Jos", "Abuja", "Lagos", "Kaduna", "Kano", "Bauchi", "Gombe", "Port Harcourt"];
+const cities = ["Jos", "Abuja"];
 
 const containerVariants = {
   hidden: { opacity: 0 },
