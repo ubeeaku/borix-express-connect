@@ -180,6 +180,15 @@ const AdminLogin = () => {
               {isLoading ? "Signing in..." : "Sign In"}
               <ArrowRight className="w-4 h-4" />
             </Button>
+
+            <p className="text-center text-sm">
+              <a
+                href="/admin/forgot-password"
+                className="text-accent hover:underline"
+              >
+                Forgot password?
+              </a>
+            </p>
           </form>
         </div>
 
