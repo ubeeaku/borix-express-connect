@@ -66,9 +66,14 @@ const DriverApplication = () => {
   };
 
   const uploadFile = async (file: File, folder: string) => {
-    const ext = file.name.split(".").pop();
-    const path = `${folder}/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
-    const { error } = await supabase.storage.from("driver-documents").upload(path, file);
+    const rawExt = (file.name.split(".").pop() || "").toLowerCase();
+    const ext = /^[a-z0-9]{1,5}$/.test(rawExt) ? rawExt : "bin";
+    // Unique, unguessable per-file path under applications/<uuid>/ enforced by storage RLS
+    const path = `applications/${crypto.randomUUID()}/${folder}.${ext}`;
+    const { error } = await supabase.storage.from("driver-documents").upload(path, file, {
+      upsert: false,
+      contentType: file.type || undefined,
+    });
     if (error) throw error;
     const { data } = supabase.storage.from("driver-documents").getPublicUrl(path);
     return data.publicUrl;
