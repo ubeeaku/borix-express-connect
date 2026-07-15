@@ -12,6 +12,8 @@ import Wallet from "./pages/Wallet";
 import Auth from "./pages/Auth";
 import About from "./pages/About";
 import AdminLogin from "./pages/admin/AdminLogin";
+import AdminForgotPassword from "./pages/admin/AdminForgotPassword";
+import ResetPassword from "./pages/ResetPassword";
 import AdminDashboard from "./pages/admin/AdminDashboard";
 import AdminBookings from "./pages/admin/AdminBookings";
 import AdminManifest from "./pages/admin/AdminManifest";
