@@ -60,6 +60,8 @@ const App = () => (
           <Route path="/driver/dashboard" element={<DriverDashboard />} />
           <Route path="/admin" element={<AdminLogin />} />
           <Route path="/admin/login" element={<AdminLogin />} />
+          <Route path="/admin/forgot-password" element={<AdminForgotPassword />} />
+          <Route path="/reset-password" element={<ResetPassword />} />
           <Route path="/admin/dashboard" element={<ProtectedAdminRoute><AdminDashboard /></ProtectedAdminRoute>} />
           <Route path="/admin/routes" element={<ProtectedAdminRoute><AdminRoutes /></ProtectedAdminRoute>} />
           <Route path="/admin/trips" element={<ProtectedAdminRoute><AdminTrips /></ProtectedAdminRoute>} />
