@@ -23,17 +23,24 @@ export const useRefund = () => {
   const processRefund = async (params: RefundParams): Promise<RefundResult> => {
     setIsLoading(true);
     try {
-      const { data, error } = await supabase.functions.invoke('process-refund', {
-        body: params,
+      const { data: sessionData } = await supabase.auth.getSession();
+      const token = sessionData.session?.access_token;
+      if (!token) return { success: false, error: 'You must be signed in as an admin' };
+
+      const res = await fetch('/api/paystack/refund', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(params),
       });
 
-      if (error) {
-        console.error('Refund error:', error);
-        return { success: false, error: error.message || 'Refund failed' };
-      }
+      let data: any = null;
+      try { data = await res.json(); } catch { /* ignore */ }
 
-      if (!data.success) {
-        return { success: false, error: data.error || 'Refund failed' };
+      if (!res.ok || !data?.success) {
+        return { success: false, error: data?.message || data?.error || 'Refund failed' };
       }
 
       return {

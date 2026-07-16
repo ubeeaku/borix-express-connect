@@ -1,5 +1,4 @@
 import { useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
 
 interface PaystackInitParams {
   email: string;
@@ -29,6 +28,21 @@ interface VerifyResponse {
   error?: string;
 }
 
+async function callApi<T>(path: string, body: unknown): Promise<T & { success: boolean; error?: string }> {
+  const res = await fetch(path, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  });
+  let data: any = null;
+  try { data = await res.json(); } catch { /* non-json */ }
+  if (!res.ok || !data?.success) {
+    const message = data?.message || data?.error || `Request failed (${res.status})`;
+    return { success: false, error: message } as any;
+  }
+  return data;
+}
+
 export const usePaystack = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -37,8 +51,7 @@ export const usePaystack = () => {
     setIsLoading(true);
     setError(null);
     try {
-      const { data, error: fnError } = await supabase.functions.invoke('paystack-initialize', { body: params });
-      if (fnError) throw new Error(fnError.message);
+      const data = await callApi<PaystackResponse>('/api/paystack/initialize', params);
       if (!data.success) throw new Error(data.error || 'Payment initialization failed');
       return data;
     } catch (err) {
@@ -54,8 +67,7 @@ export const usePaystack = () => {
     setIsLoading(true);
     setError(null);
     try {
-      const { data, error: fnError } = await supabase.functions.invoke('paystack-verify', { body: { reference } });
-      if (fnError) throw new Error(fnError.message);
+      const data = await callApi<VerifyResponse>('/api/paystack/verify', { reference });
       if (!data.success) throw new Error(data.error || 'Payment verification failed');
       return data;
     } catch (err) {
