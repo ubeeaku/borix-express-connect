@@ -23,11 +23,29 @@ export const useRefund = () => {
   const processRefund = async (params: RefundParams): Promise<RefundResult> => {
     setIsLoading(true);
     try {
-      const { data, error: fnErr } = await supabase.functions.invoke('process-refund', {
-        body: params,
+      // Supabase is used only for the auth session token; the refund itself
+      // runs on the Vercel serverless function.
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.access_token) {
+        return { success: false, error: 'Authentication required' };
+      }
+
+      const res = await fetch('/api/paystack/refund', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify(params),
       });
-      if (fnErr) return { success: false, error: fnErr.message || 'Refund failed' };
-      if (!data?.success) return { success: false, error: data?.error || 'Refund failed' };
+
+      let data: any = null;
+      try { data = await res.json(); } catch { /* non-JSON */ }
+
+      if (!res.ok || !data?.success) {
+        return { success: false, error: data?.error || `Refund failed (${res.status})` };
+      }
+
       return {
         success: true,
         message: data.message,

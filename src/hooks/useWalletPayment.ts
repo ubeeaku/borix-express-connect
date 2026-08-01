@@ -1,6 +1,5 @@
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { useNavigate } from "react-router-dom";
 
 interface WalletPaymentParams {
   email: string;
@@ -23,22 +22,31 @@ interface WalletPaymentResult {
 
 export const useWalletPayment = () => {
   const [isLoading, setIsLoading] = useState(false);
-  const navigate = useNavigate();
 
   const payWithWallet = async (params: WalletPaymentParams): Promise<WalletPaymentResult> => {
     setIsLoading(true);
     try {
-      const { data, error } = await supabase.functions.invoke('wallet-pay', {
-        body: params,
-      });
-
-      if (error) {
-        console.error('Wallet payment error:', error);
-        return { success: false, error: error.message || 'Payment failed' };
+      // Supabase is used only for the auth session token; the payment itself
+      // runs on the Vercel serverless function.
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.access_token) {
+        return { success: false, error: 'Please sign in to pay with your wallet' };
       }
 
-      if (!data.success) {
-        return { success: false, error: data.error || 'Payment failed' };
+      const res = await fetch('/api/wallet/pay', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify(params),
+      });
+
+      let data: any = null;
+      try { data = await res.json(); } catch { /* non-JSON */ }
+
+      if (!res.ok || !data?.success) {
+        return { success: false, error: data?.error || `Payment failed (${res.status})` };
       }
 
       return {
