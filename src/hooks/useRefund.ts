@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { apiUrl } from "@/lib/apiBase";
 
 interface RefundParams {
   bookingId: string;
@@ -30,7 +31,7 @@ export const useRefund = () => {
         return { success: false, error: 'Authentication required' };
       }
 
-      const res = await fetch('/api/paystack/refund', {
+      const res = await fetch(apiUrl('/api/paystack/refund'), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
