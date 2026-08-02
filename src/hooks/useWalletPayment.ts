@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { apiUrl } from "@/lib/apiBase";
 
 interface WalletPaymentParams {
   email: string;
@@ -33,7 +34,7 @@ export const useWalletPayment = () => {
         return { success: false, error: 'Please sign in to pay with your wallet' };
       }
 
-      const res = await fetch('/api/wallet/pay', {
+      const res = await fetch(apiUrl('/api/wallet/pay'), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { apiUrl } from "@/lib/apiBase";
 
 const API_BASE = "/api/paystack";
 
@@ -31,7 +32,7 @@ interface VerifyResponse {
 }
 
 async function postJson<T>(path: string, body: unknown): Promise<T> {
-  const res = await fetch(path, {
+  const res = await fetch(apiUrl(path), {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
