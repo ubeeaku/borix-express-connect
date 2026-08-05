@@ -25,17 +25,59 @@ const ResetPassword = () => {
   const [confirm, setConfirm] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [ready, setReady] = useState(false);
+  const [linkError, setLinkError] = useState<string | null>(null);
 
   useEffect(() => {
-    // Supabase JS auto-processes the recovery token in the URL and fires PASSWORD_RECOVERY
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
-      if (event === "PASSWORD_RECOVERY" || event === "SIGNED_IN") setReady(true);
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (session && (event === "PASSWORD_RECOVERY" || event === "SIGNED_IN")) setReady(true);
     });
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session) setReady(true);
-    });
+
+    const consumeLink = async () => {
+      const url = new URL(window.location.href);
+      const hash = new URLSearchParams(window.location.hash.replace(/^#/, ""));
+
+      // 1) Error returned by Supabase in the link itself
+      const errDesc = url.searchParams.get("error_description") || hash.get("error_description");
+      if (errDesc) {
+        setLinkError(errDesc);
+        return;
+      }
+
+      // 2) Existing / auto-detected session (implicit flow: #access_token=...)
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session) {
+        setReady(true);
+        return;
+      }
+
+      // 3) PKCE flow: ?code=...
+      const code = url.searchParams.get("code");
+      if (code) {
+        const { error } = await supabase.auth.exchangeCodeForSession(code);
+        if (error) setLinkError(error.message);
+        else setReady(true);
+        return;
+      }
+
+      // 4) Token hash flow: ?token_hash=...&type=recovery (or ?token=...)
+      const tokenHash = url.searchParams.get("token_hash") || url.searchParams.get("token");
+      if (tokenHash) {
+        const { error } = await supabase.auth.verifyOtp({
+          token_hash: tokenHash,
+          type: "recovery",
+        });
+        if (error) setLinkError(error.message);
+        else setReady(true);
+        return;
+      }
+
+      setLinkError("This reset link is invalid or has expired. Request a new one.");
+    };
+
+    consumeLink();
     return () => subscription.unsubscribe();
   }, []);
+
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
