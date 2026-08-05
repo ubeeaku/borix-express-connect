@@ -120,11 +120,19 @@ const ResetPassword = () => {
               <Bus className="w-8 h-8 text-accent-foreground" />
             </div>
             <h1 className="text-2xl font-bold text-foreground">Set a New Password</h1>
-            <p className="text-muted-foreground mt-1">
-              {ready
+            <p className={linkError ? "text-destructive mt-1" : "text-muted-foreground mt-1"}>
+              {linkError
+                ? linkError
+                : ready
                 ? "Enter your new password below."
-                : "Waiting for reset link to be verified…"}
+                : "Verifying your reset link…"}
             </p>
+            {linkError && (
+              <a href="/admin/forgot-password" className="text-accent hover:underline text-sm">
+                Request a new reset link
+              </a>
+            )}
+
           </div>
 
           <form onSubmit={handleSubmit} className="p-8 space-y-6">
