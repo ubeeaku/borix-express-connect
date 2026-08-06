@@ -23,7 +23,7 @@ const ALLOWED_ORIGIN_DOMAINS = [
 
 export function corsHeaders(req: Request): Record<string, string> {
   const origin = req.headers.get('origin') || '';
-  let allowedOrigin = 'https://borixexpress.com';
+  let allowedOrigin = `https://${SITE_DOMAIN}`;
   try {
     if (origin) {
       const url = new URL(origin);
