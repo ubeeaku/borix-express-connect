@@ -11,8 +11,10 @@ export const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY |
 
 export const PAYSTACK_BASE = 'https://api.paystack.co';
 
+const SITE_DOMAIN = (process.env.SITE_DOMAIN || 'borixexpress.com').replace(/^https?:\/\//, '');
+
 const ALLOWED_ORIGIN_DOMAINS = [
-  'borixexpress.com',
+  SITE_DOMAIN,
   'lovable.app',
   'lovable.dev',
   'lovableproject.com',
