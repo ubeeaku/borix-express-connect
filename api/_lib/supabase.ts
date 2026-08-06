@@ -11,8 +11,10 @@ export const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY |
 
 export const PAYSTACK_BASE = 'https://api.paystack.co';
 
+const SITE_DOMAIN = (process.env.SITE_DOMAIN || 'borixexpress.com').replace(/^https?:\/\//, '');
+
 const ALLOWED_ORIGIN_DOMAINS = [
-  'borixexpress.com',
+  SITE_DOMAIN,
   'lovable.app',
   'lovable.dev',
   'lovableproject.com',
@@ -21,7 +23,7 @@ const ALLOWED_ORIGIN_DOMAINS = [
 
 export function corsHeaders(req: Request): Record<string, string> {
   const origin = req.headers.get('origin') || '';
-  let allowedOrigin = 'https://borixexpress.com';
+  let allowedOrigin = `https://${SITE_DOMAIN}`;
   try {
     if (origin) {
       const url = new URL(origin);
@@ -45,7 +47,20 @@ export function json(req: Request, status: number, body: unknown) {
   return new Response(JSON.stringify(body), { status, headers: corsHeaders(req) });
 }
 
+/** Names of the env vars that must be present for the API routes to work. */
+export function missingEnv(): string[] {
+  const missing: string[] = [];
+  if (!SUPABASE_URL) missing.push('SUPABASE_URL');
+  if (!SUPABASE_ANON_KEY) missing.push('SUPABASE_ANON_KEY');
+  if (!SUPABASE_SERVICE_ROLE_KEY) missing.push('SUPABASE_SERVICE_ROLE_KEY');
+  return missing;
+}
+
 export function adminClient(): SupabaseClient {
+  const missing = missingEnv();
+  if (missing.length) {
+    throw new Error(`Server misconfigured: missing env var(s) ${missing.join(', ')}`);
+  }
   return createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
     auth: { persistSession: false, autoRefreshToken: false },
   });

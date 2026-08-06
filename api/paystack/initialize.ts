@@ -85,7 +85,8 @@ export default async function handler(req: Request) {
     await supabase.from('bookings').delete().eq('id', bookingData.id);
   };
 
-  const origin = req.headers.get('origin') || 'https://borixexpress.com';
+  const siteDomain = (process.env.SITE_DOMAIN || 'borixexpress.com').replace(/^https?:\/\//, '');
+  const origin = req.headers.get('origin') || `https://${siteDomain}`;
 
   let psData: any;
   try {
