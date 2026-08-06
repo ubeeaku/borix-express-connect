@@ -1,93 +1,92 @@
-# Borix Express — Booking Flow Redesign Plan
+# Point Borix Express at your own Supabase project
 
-Transform the current "pick route → pick seat" flow into a **departure marketplace**: passengers browse real scheduled departures (park, driver, vehicle, time, price, seats left), then pick a seat on that specific vehicle.
+Goal: switch the app from the managed Lovable Cloud backend to your Supabase project (`tqixowqmgpgbltfazbpq`) and the live domain `borixexpress.com`, while keeping all credentials out of the code.
 
-This is a large change touching the database, passenger booking flow, driver portal, and admin portal. I'll deliver it in clearly scoped phases so you can review between each.
+## What will change
 
----
+- `.env` will be updated to your project URL/ref so the in-editor preview and local dev point at the same backend as production.
+- `supabase/export/README.md` will be pre-filled with your actual project ref and domain.
+- No source-code logic changes are required: `api/_lib/supabase.ts` and `src/lib/apiBase.ts` already read everything from environment variables.
 
-## Phase 1 — Data model (foundation)
+## Steps
 
-New tables:
+### 1. Provide the publishable key
 
-- **parks** — name, city, address, contact_phone, status (active/inactive)
-- **vehicles** — driver_id, type (Sienna/Hiace/Coaster), plate_number, capacity, year, color, status
-- **departures** — the central new entity. Fields: route_id, park_id, driver_id, vehicle_id, travel_date, departure_time, total_seats, price, status (scheduled/boarding/in_transit/completed/cancelled), commission_amount
+The project ref and live domain are already known. To complete the local `.env` I need the **publishable (anon) key** for project `tqixowqmgpgbltfazbpq`. This value is safe to paste — it ships in the browser bundle. The **service role key** must NOT be pasted in chat; it goes in Vercel only.
 
-Changes to existing tables:
+### 2. Update `.env`
 
-- **booked_seats** & **bookings**: add `departure_id` (becomes the primary link). Seat numbers become per-vehicle (1..capacity), not the current 1..35 across 5 cars.
-- **drivers**: add rating, total_trips (denormalized counters), profile_photo_url
-- **routes**: keep as the city-pair catalog (Jos↔Abuja etc.); price moves to per-departure
-- New **platform_settings** row for default commission
+Replace the Lovable Cloud values with:
 
-Seat hold mechanism: a `seat_holds` table with `expires_at` (10 min) so reservations auto-release. A scheduled function or `expires_at < now()` filter in availability queries.
+```
+VITE_SUPABASE_PROJECT_ID="tqixowqmgpgbltfazbpq"
+VITE_SUPABASE_PUBLISHABLE_KEY="<your-publishable-key>"
+VITE_SUPABASE_URL="https://tqixowqmgpgbltfazbpq.supabase.co"
+```
 
-All tables get RLS + GRANTs following project conventions.
+### 3. Pre-fill the migration guide
 
-## Phase 2 — Passenger booking flow
+Update `supabase/export/README.md` so all examples use:
 
-New step sequence on `/booking`:
+- Project ref: `tqixowqmgpgbltfazbpq`
+- Project URL: `https://tqixowqmgpgbltfazbpq.supabase.co`
+- Live domain: `borixexpress.com`
 
-1. **Route + date** — origin city, destination city, date (Today / Tomorrow / pick)
-2. **Departures list** — grouped by park. Each card shows driver photo + name + rating + trips, vehicle type, park, departure time, seats left, fare, "Select Departure" button. Empty state when no departures.
-3. **Seat picker** — real vehicle layout based on `vehicle.type` (Sienna 5, Hiace 14, Coaster 30). Shows booked + currently-held seats. Selection creates a 10-min hold.
-4. **Passenger info** — name, phone, email (optional), next-of-kin (kept, per existing business rule), with a summary panel showing chosen driver/park/vehicle/seat/time.
-5. **Payment** — existing Paystack + Wallet, updated to reference `departure_id` instead of route+date+time. Booking ref format preserved (`BRX-XXXXXXXXXXXX`).
-6. **Confirmation** — adds driver, park, vehicle, seat label; downloadable ticket (PDF or printable view); existing email/SMS hooks updated with new fields.
+### 4. Recreate the backend in your project
 
-Flutterwave + Bank Transfer are listed as "coming soon" placeholders unless you want them wired now.
+In your Supabase dashboard → SQL Editor, run:
 
-## Phase 3 — Driver portal
+1. `supabase/export/01_schema.sql`
+2. `supabase/export/02_seed.sql`
 
-New screens under `/driver`:
+Then add your admin user:
 
-- **Create Departure** form: park, route, date, time, vehicle (from driver's vehicles), seats, price (defaults from route)
-- **My Departures** list with status controls: Start Trip, Complete Trip, Cancel
-- **Bookings per Departure** — passenger manifest with seat numbers
-- **Dashboard metrics**: trips today, seats sold, revenue (after commission), upcoming departures
-- **My Vehicles** — register/edit vehicles
+```sql
+insert into public.user_roles (user_id, role)
+values ('<new-admin-user-uuid>', 'admin');
+```
 
-## Phase 4 — Admin portal
+### 5. Configure Vercel environment variables
 
-- **Parks** module (CRUD + suspend) — new
-- **Vehicles** module — new (view all, verify)
-- **Departures** module — view/cancel any departure, override status
-- **Commission settings** — single configurable amount (per passenger) in platform_settings; can be edited anytime
-- **Dashboard** additions: total parks, active departures, commission earned, popular routes, cancelled trips
-- Driver approval / document verification already exists — extend with rating + trips counters surfaced
+Production **and** Preview environment variables:
 
-## Phase 5 — Confirmation & notifications
+| Name | Value |
+|---|---|
+| `VITE_SUPABASE_URL` | `https://tqixowqmgpgbltfazbpq.supabase.co` |
+| `VITE_SUPABASE_PUBLISHABLE_KEY` | your anon key |
+| `VITE_SUPABASE_PROJECT_ID` | `tqixowqmgpgbltfazbpq` |
+| `SUPABASE_URL` | same URL |
+| `SUPABASE_ANON_KEY` | same anon key |
+| `SUPABASE_SERVICE_ROLE_KEY` | your service role key |
+| `PAYSTACK_SECRET_KEY` | `sk_live_...` / `sk_test_...` |
+| `PAYSTACK_WEBHOOK_SECRET` | webhook secret (optional) |
+| `SITE_DOMAIN` | `borixexpress.com` |
+| `VITE_API_ORIGIN` | `https://borixexpress.com` |
 
-- Update existing email/SMS templates to include driver name, park, vehicle, seat
-- Add downloadable ticket (HTML→print or simple PDF)
-- WhatsApp confirmation: deep-link `wa.me` with prefilled message (no external API needed)
+Redeploy after setting them.
 
----
+### 6. Configure Supabase auth URLs
 
-## Technical section (for reference)
+In your Supabase project → Authentication → URL Configuration:
 
-- Seat-availability query: `vehicle.capacity` minus booked_seats minus active holds for that `departure_id`.
-- Edge functions to update: `paystack-initialize`, `paystack-verify`, `wallet-pay` — switch payload from `(routeId, date, time, seats[])` to `(departureId, seats[])`, validate seat range against vehicle capacity, write `departure_id` into bookings.
-- Commission applied at verify-time: split `total_amount` into `driver_amount` + `platform_commission`, recorded on booking + `driver_earnings`.
-- Hold cleanup: filter `seat_holds.expires_at > now()` at read time; nightly cron optional.
-- All new public tables get `GRANT` + RLS in the same migration; admin actions gated by `is_admin()`, driver actions gated by `drivers.user_id = auth.uid()`.
-- Migration is additive — old bookings keep working; new bookings require `departure_id`.
+- Site URL: `https://borixexpress.com`
+- Redirect URLs: `https://borixexpress.com/**`, `https://borixexpress.com/reset-password`, and your `*.vercel.app` preview URL
 
----
+### 7. Configure Paystack webhook
 
-## Suggested delivery order
+Paystack Dashboard → Settings → API Keys & Webhooks:
 
-I recommend shipping in this order so you can use the app between phases:
+```
+https://borixexpress.com/api/paystack/webhook
+```
 
-1. **Phase 1 + Phase 2** together (database + new passenger flow with seeded test departures) — this is the visible redesign.
-2. **Phase 3** — driver self-service so real departures replace seeded ones.
-3. **Phase 4** — admin parks/vehicles/commission management.
-4. **Phase 5** — ticket download + richer notifications.
+### 8. Sanity checks
 
-## Open questions before I start
+- `/routes` shows Jos ⇄ Abuja with the seeded fare.
+- Admin login persists after the redirect.
+- A test booking reaches Paystack checkout and, after payment, the booking appears in the admin dashboard.
 
-1. Should I keep the **5 cars × 7 seats** model as a fallback when a departure has no assigned vehicle, or fully replace it with per-vehicle layouts (Sienna 5 / Hiace 14 / Coaster 30)?
-2. **Commission**: single flat amount per passenger (e.g. ₦2,000), or percentage? Same for all routes, or per-route?
-3. For Phase 1, do you want me to **seed sample parks + departures** (Terminus, Bauchi Road, Bukuru, Rayfield) so the new flow is usable immediately, or wait until drivers create their own?
-4. Flutterwave + Bank Transfer now, or leave as "coming soon"?
+## Out of scope
+
+- No framework or routing changes.
+- No new tables or API routes.
