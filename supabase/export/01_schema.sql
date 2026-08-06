@@ -4,11 +4,9 @@
 -- Order: 1) this file  2) 02_seed.sql  3) create your admin user
 -- =========================================================
 
-\restrict 0oX7TsFiJFmKuvCl0vljPqB5jV4mqcW0XabyeHzmLAeqgJsrgSjxwpVgZF4Qsa6
+CREATE SCHEMA IF NOT EXISTS app_private;
 
-CREATE SCHEMA app_private;
-
-CREATE SCHEMA public;
+-- public schema already exists
 
 COMMENT ON SCHEMA public IS 'standard public schema';
 
@@ -804,9 +802,6 @@ ALTER DEFAULT PRIVILEGES FOR ROLE supabase_admin IN SCHEMA public GRANT ALL ON T
 ALTER DEFAULT PRIVILEGES FOR ROLE supabase_admin IN SCHEMA public GRANT ALL ON TABLES TO anon;
 ALTER DEFAULT PRIVILEGES FOR ROLE supabase_admin IN SCHEMA public GRANT ALL ON TABLES TO authenticated;
 ALTER DEFAULT PRIVILEGES FOR ROLE supabase_admin IN SCHEMA public GRANT ALL ON TABLES TO service_role;
-
-\unrestrict 0oX7TsFiJFmKuvCl0vljPqB5jV4mqcW0XabyeHzmLAeqgJsrgSjxwpVgZF4Qsa6
-
 
 -- =========================================================
 -- Storage: driver-documents bucket (private) + policies
