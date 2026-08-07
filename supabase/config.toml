@@ -1,7 +1,7 @@
 project_id = "tqixowqmgpgbltfazbpq"
 
-[functions.paystack-initialize]
+[functions.wallet-pay]
 verify_jwt = false
 
-[functions.paystack-verify]
+[functions.send-driver-sms]
 verify_jwt = false

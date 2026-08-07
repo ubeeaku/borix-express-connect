@@ -21,6 +21,7 @@ import {
   Loader2,
   Eye,
   MoreVertical,
+  RotateCcw,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -54,9 +55,11 @@ import {
 } from "@/components/ui/table";
 import { useAdminAuth } from "@/hooks/useAdminAuth";
 import { useBookings, Booking } from "@/hooks/useBookings";
+import { useRefund } from "@/hooks/useRefund";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import { format } from "date-fns";
+import { Label } from "@/components/ui/label";
 
 const sidebarItems = [
   { name: "Dashboard", icon: LayoutDashboard, path: "/admin/dashboard" },
@@ -72,9 +75,13 @@ const sidebarItems = [
 const AdminBookings = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
+  const [refundBooking, setRefundBooking] = useState<Booking | null>(null);
+  const [refundAmount, setRefundAmount] = useState("");
+  const [refundReason, setRefundReason] = useState("");
   const [routes, setRoutes] = useState<{ id: string; origin: string; destination: string }[]>([]);
   const location = useLocation();
   const { user, isAdmin, isLoading: authLoading, signOut } = useAdminAuth();
+  const { processRefund, isLoading: refundLoading } = useRefund();
   const {
     bookings,
     isLoading,
@@ -82,6 +89,7 @@ const AdminBookings = () => {
     setFilter,
     updateBookingStatus,
     getStats,
+    fetchBookings,
   } = useBookings();
 
   useEffect(() => {
@@ -103,6 +111,51 @@ const AdminBookings = () => {
     }
   };
 
+  const handleRefund = async () => {
+    if (!refundBooking) return;
+    
+    const amount = parseFloat(refundAmount);
+    if (isNaN(amount) || amount <= 0) {
+      toast({ title: "Please enter a valid refund amount", variant: "destructive" });
+      return;
+    }
+    
+    if (amount > refundBooking.total_amount) {
+      toast({ title: "Refund cannot exceed booking amount", variant: "destructive" });
+      return;
+    }
+
+    const result = await processRefund({
+      bookingId: refundBooking.id,
+      passengerEmail: refundBooking.passenger_email,
+      refundAmount: amount,
+      reason: refundReason || undefined,
+    });
+
+    if (result.success) {
+      toast({ 
+        title: "Refund Processed",
+        description: `₦${amount.toLocaleString()} refunded to wallet`,
+      });
+      setRefundBooking(null);
+      setRefundAmount("");
+      setRefundReason("");
+      fetchBookings();
+    } else {
+      toast({ 
+        title: "Refund Failed",
+        description: result.error,
+        variant: "destructive",
+      });
+    }
+  };
+
+  const openRefundDialog = (booking: Booking) => {
+    setRefundBooking(booking);
+    setRefundAmount(booking.total_amount.toString());
+    setRefundReason("");
+  };
+
   const getStatusBadge = (status: string) => {
     switch (status) {
       case "completed":
@@ -111,6 +164,8 @@ const AdminBookings = () => {
         return <Badge className="bg-yellow-100 text-yellow-700 hover:bg-yellow-100">Pending</Badge>;
       case "failed":
         return <Badge className="bg-red-100 text-red-700 hover:bg-red-100">Failed</Badge>;
+      case "refunded":
+        return <Badge className="bg-blue-100 text-blue-700 hover:bg-blue-100">Refunded</Badge>;
       default:
         return <Badge variant="secondary">{status}</Badge>;
     }
@@ -372,6 +427,12 @@ const AdminBookings = () => {
                                 <Eye className="w-4 h-4 mr-2" />
                                 View Details
                               </DropdownMenuItem>
+                              {booking.payment_status === "completed" && (
+                                <DropdownMenuItem onClick={() => openRefundDialog(booking)}>
+                                  <RotateCcw className="w-4 h-4 mr-2" />
+                                  Issue Refund
+                                </DropdownMenuItem>
+                              )}
                               {booking.payment_status === "pending" && (
                                 <DropdownMenuItem
                                   onClick={() => handleStatusChange(booking.id, "completed")}
@@ -379,10 +440,10 @@ const AdminBookings = () => {
                                   Mark as Completed
                                 </DropdownMenuItem>
                               )}
-                              {booking.payment_status !== "failed" && (
+                              {booking.payment_status !== "failed" && booking.payment_status !== "refunded" && (
                                 <DropdownMenuItem
                                   onClick={() => handleStatusChange(booking.id, "failed")}
-                                  className="text-red-600"
+                                  className="text-destructive"
                                 >
                                   Mark as Failed
                                 </DropdownMenuItem>
@@ -468,6 +529,101 @@ const AdminBookings = () => {
                   <span>Total Amount</span>
                   <span className="text-accent">₦{selectedBooking.total_amount.toLocaleString()}</span>
                 </div>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Refund Dialog */}
+      <Dialog open={!!refundBooking} onOpenChange={() => setRefundBooking(null)}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Issue Refund</DialogTitle>
+          </DialogHeader>
+          {refundBooking && (
+            <div className="space-y-4">
+              <div className="bg-muted rounded-xl p-4 space-y-2">
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">Reference</span>
+                  <span className="font-mono font-medium">{refundBooking.booking_reference}</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">Passenger</span>
+                  <span className="font-medium">{refundBooking.passenger_name}</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">Email</span>
+                  <span className="font-medium">{refundBooking.passenger_email}</span>
+                </div>
+                <div className="flex justify-between text-sm border-t pt-2 mt-2">
+                  <span className="text-muted-foreground">Booking Amount</span>
+                  <span className="font-bold">₦{refundBooking.total_amount.toLocaleString()}</span>
+                </div>
+              </div>
+
+              <div className="space-y-3">
+                <div>
+                  <Label htmlFor="refundAmount">Refund Amount (₦)</Label>
+                  <Input
+                    id="refundAmount"
+                    type="number"
+                    value={refundAmount}
+                    onChange={(e) => setRefundAmount(e.target.value)}
+                    placeholder="Enter refund amount"
+                    className="mt-1"
+                    max={refundBooking.total_amount}
+                  />
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Maximum: ₦{refundBooking.total_amount.toLocaleString()}
+                  </p>
+                </div>
+                
+                <div>
+                  <Label htmlFor="refundReason">Reason (Optional)</Label>
+                  <Input
+                    id="refundReason"
+                    value={refundReason}
+                    onChange={(e) => setRefundReason(e.target.value)}
+                    placeholder="e.g., Trip cancelled, Customer request"
+                    className="mt-1"
+                  />
+                </div>
+              </div>
+
+              <div className="bg-accent/10 rounded-xl p-4">
+                <p className="text-sm text-foreground">
+                  <strong>Note:</strong> This will credit ₦{parseFloat(refundAmount) || 0} to the passenger's wallet.
+                  The passenger must have an account with this email to receive the refund.
+                </p>
+              </div>
+
+              <div className="flex gap-3 pt-2">
+                <Button
+                  variant="outline"
+                  className="flex-1"
+                  onClick={() => setRefundBooking(null)}
+                  disabled={refundLoading}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  className="flex-1"
+                  onClick={handleRefund}
+                  disabled={refundLoading || !refundAmount}
+                >
+                  {refundLoading ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                      Processing...
+                    </>
+                  ) : (
+                    <>
+                      <RotateCcw className="w-4 h-4 mr-2" />
+                      Process Refund
+                    </>
+                  )}
+                </Button>
               </div>
             </div>
           )}

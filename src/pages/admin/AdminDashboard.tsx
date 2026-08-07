@@ -22,6 +22,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAdminAuth } from "@/hooks/useAdminAuth";
+import borixLogo from "@/assets/borix-logo-white.png";
 
 const sidebarItems = [
   { name: "Dashboard", icon: LayoutDashboard, path: "/admin/dashboard" },
@@ -29,6 +30,7 @@ const sidebarItems = [
   { name: "Trips", icon: Calendar, path: "/admin/trips" },
   { name: "Vehicles", icon: Truck, path: "/admin/vehicles" },
   { name: "Drivers", icon: Users, path: "/admin/drivers" },
+  { name: "Applications", icon: ClipboardList, path: "/admin/driver-applications" },
   { name: "Bookings", icon: Ticket, path: "/admin/bookings" },
   { name: "Trip Manifest", icon: ClipboardList, path: "/admin/manifest" },
   { name: "Payments", icon: CreditCard, path: "/admin/payments" },
@@ -67,7 +69,7 @@ const stats = [
 ];
 
 const recentBookings = [
-  { id: "BRX-001", route: "Lagos → Abuja", customer: "Chidi O.", amount: 15000, status: "confirmed" },
+  { id: "BRX-001", route: "Lagos → Abuja", customer: "Chidi O.", amount: 13000, status: "confirmed" },
   { id: "BRX-002", route: "Jos → Abuja", customer: "Amina I.", amount: 8000, status: "confirmed" },
   { id: "BRX-003", route: "Lagos → PH", customer: "Emeka N.", amount: 12000, status: "pending" },
   { id: "BRX-004", route: "Kano → Lagos", customer: "Fatima A.", amount: 18000, status: "confirmed" },
@@ -107,13 +109,8 @@ const AdminDashboard = () => {
         <div className="flex flex-col h-full">
           {/* Logo */}
           <div className="p-6 border-b border-white/10">
-            <Link to="/" className="flex items-center gap-2">
-              <div className="w-10 h-10 rounded-xl bg-accent flex items-center justify-center">
-                <Bus className="w-6 h-6 text-accent-foreground" />
-              </div>
-              <span className="text-xl font-bold text-white">
-                Borix<span className="text-accent">Express</span>
-              </span>
+            <Link to="/" className="flex items-center">
+              <img src={borixLogo} alt="Borix Express" className="h-12 w-auto" />
             </Link>
           </div>
 

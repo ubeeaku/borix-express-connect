@@ -10,18 +10,22 @@ interface AdminAuthState {
   isLoading: boolean;
 }
 
-// Helper function to check admin role using server-side RPC only
+// Helper function to check admin role through backend-enforced role access
 const checkIsAdmin = async (userId: string): Promise<boolean> => {
   try {
-    // Use RPC call for server-side validation - fail closed if unavailable
-    const { data, error } = await supabase.rpc('is_admin', { _user_id: userId });
+    const { data, error } = await supabase
+      .from('user_roles')
+      .select('id')
+      .eq('user_id', userId)
+      .eq('role', 'admin')
+      .maybeSingle();
     
     if (error) {
       console.error('Admin check failed:', error.message);
       return false; // Fail closed - deny access if check fails
     }
     
-    return data === true;
+    return !!data;
   } catch {
     return false; // Fail closed on any error
   }

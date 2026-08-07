@@ -8,7 +8,12 @@ import RoutesPage from "./pages/Routes";
 import Booking from "./pages/Booking";
 import Contact from "./pages/Contact";
 import Confirmation from "./pages/Confirmation";
+import Wallet from "./pages/Wallet";
+import Auth from "./pages/Auth";
+import About from "./pages/About";
 import AdminLogin from "./pages/admin/AdminLogin";
+import AdminForgotPassword from "./pages/admin/AdminForgotPassword";
+import ResetPassword from "./pages/ResetPassword";
 import AdminDashboard from "./pages/admin/AdminDashboard";
 import AdminBookings from "./pages/admin/AdminBookings";
 import AdminManifest from "./pages/admin/AdminManifest";
@@ -16,10 +21,18 @@ import AdminRoutes from "./pages/admin/AdminRoutes";
 import AdminTrips from "./pages/admin/AdminTrips";
 import AdminVehicles from "./pages/admin/AdminVehicles";
 import AdminDrivers from "./pages/admin/AdminDrivers";
+import AdminDriverApplications from "./pages/admin/AdminDriverApplications";
 import AdminPayments from "./pages/admin/AdminPayments";
 import AdminSettings from "./pages/admin/AdminSettings";
 import ProtectedAdminRoute from "./components/auth/ProtectedAdminRoute";
 import NotFound from "./pages/NotFound";
+import DriveWithUs from "./pages/driver/DriveWithUs";
+import DriverRequirements from "./pages/driver/DriverRequirements";
+import DriverApplication from "./pages/driver/DriverApplication";
+import Partnership from "./pages/driver/Partnership";
+import Safety from "./pages/driver/Safety";
+import DriverLogin from "./pages/driver/DriverLogin";
+import DriverDashboard from "./pages/driver/DriverDashboard";
 
 const queryClient = new QueryClient();
 
@@ -35,13 +48,26 @@ const App = () => (
           <Route path="/booking" element={<Booking />} />
           <Route path="/contact" element={<Contact />} />
           <Route path="/confirmation" element={<Confirmation />} />
+          <Route path="/auth" element={<Auth />} />
+          <Route path="/wallet" element={<Wallet />} />
+          <Route path="/about" element={<About />} />
+          <Route path="/driver/drive-with-us" element={<DriveWithUs />} />
+          <Route path="/driver/requirements" element={<DriverRequirements />} />
+          <Route path="/driver/apply" element={<DriverApplication />} />
+          <Route path="/driver/partnership" element={<Partnership />} />
+          <Route path="/driver/safety" element={<Safety />} />
+          <Route path="/driver/login" element={<DriverLogin />} />
+          <Route path="/driver/dashboard" element={<DriverDashboard />} />
           <Route path="/admin" element={<AdminLogin />} />
           <Route path="/admin/login" element={<AdminLogin />} />
+          <Route path="/admin/forgot-password" element={<AdminForgotPassword />} />
+          <Route path="/reset-password" element={<ResetPassword />} />
           <Route path="/admin/dashboard" element={<ProtectedAdminRoute><AdminDashboard /></ProtectedAdminRoute>} />
           <Route path="/admin/routes" element={<ProtectedAdminRoute><AdminRoutes /></ProtectedAdminRoute>} />
           <Route path="/admin/trips" element={<ProtectedAdminRoute><AdminTrips /></ProtectedAdminRoute>} />
           <Route path="/admin/vehicles" element={<ProtectedAdminRoute><AdminVehicles /></ProtectedAdminRoute>} />
           <Route path="/admin/drivers" element={<ProtectedAdminRoute><AdminDrivers /></ProtectedAdminRoute>} />
+          <Route path="/admin/driver-applications" element={<ProtectedAdminRoute><AdminDriverApplications /></ProtectedAdminRoute>} />
           <Route path="/admin/bookings" element={<ProtectedAdminRoute><AdminBookings /></ProtectedAdminRoute>} />
           <Route path="/admin/manifest" element={<ProtectedAdminRoute><AdminManifest /></ProtectedAdminRoute>} />
           <Route path="/admin/payments" element={<ProtectedAdminRoute><AdminPayments /></ProtectedAdminRoute>} />

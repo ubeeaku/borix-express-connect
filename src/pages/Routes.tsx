@@ -14,20 +14,20 @@ const routes = [
     id: 1,
     origin: "Jos",
     destination: "Abuja",
-    price: 15000,
+    price: 13000,
     duration: "4 hours",
     departures: ["7:00 AM", "1:00 PM"],
-    availableSeats: 5,
+    availableSeats: 7,
     image: josRock,
   },
   {
     id: 2,
     origin: "Abuja",
     destination: "Jos",
-    price: 15000,
+    price: 13000,
     duration: "4 hours",
     departures: ["7:00 AM", "1:00 PM"],
-    availableSeats: 5,
+    availableSeats: 7,
     image: abujaCity,
   },
 ];
@@ -144,7 +144,7 @@ const Routes = () => {
                         ₦{route.price.toLocaleString()}
                       </p>
                     </div>
-                    <Link to={`/booking?route=${route.id}`}>
+                    <Link to={`/booking?origin=${encodeURIComponent(route.origin)}&destination=${encodeURIComponent(route.destination)}`}>
                       <Button variant="accent">
                         Book Now
                         <ArrowRight className="w-4 h-4" />

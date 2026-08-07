@@ -24,7 +24,7 @@ const AdminSettings = () => {
     paymentAlerts: true,
     dailyReports: false,
     departureTimes: "7:00 AM, 1:00 PM",
-    seatsPerCar: 5,
+    seatsPerCar: 7,
     carsPerTrip: 5,
   });
 

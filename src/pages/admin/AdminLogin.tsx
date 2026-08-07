@@ -15,18 +15,22 @@ const loginSchema = z.object({
   password: z.string().min(6, "Password must be at least 6 characters").max(128),
 });
 
-// Helper function to check admin role using server-side RPC only
+// Helper function to check admin role through backend-enforced role access
 const checkIsAdmin = async (userId: string): Promise<boolean> => {
   try {
-    // Use RPC call for server-side validation - fail closed if unavailable
-    const { data, error } = await supabase.rpc('is_admin', { _user_id: userId });
+    const { data, error } = await supabase
+      .from('user_roles')
+      .select('id')
+      .eq('user_id', userId)
+      .eq('role', 'admin')
+      .maybeSingle();
     
     if (error) {
       console.error('Admin check failed:', error.message);
       return false; // Fail closed - deny access if check fails
     }
     
-    return data === true;
+    return !!data;
   } catch {
     return false; // Fail closed on any error
   }
@@ -180,6 +184,15 @@ const AdminLogin = () => {
               {isLoading ? "Signing in..." : "Sign In"}
               <ArrowRight className="w-4 h-4" />
             </Button>
+
+            <p className="text-center text-sm">
+              <a
+                href="/admin/forgot-password"
+                className="text-accent hover:underline"
+              >
+                Forgot password?
+              </a>
+            </p>
           </form>
         </div>
 

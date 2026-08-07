@@ -47,7 +47,7 @@ const Confirmation = () => {
           time: result.booking?.departure_time || '7:00 AM',
           passenger: result.booking?.passenger_name || 'Guest',
           seats: result.booking?.number_of_seats || 1,
-          price: result.booking?.total_amount || 15000,
+          price: result.booking?.total_amount || 13000,
         });
         // Clear stored reference
         sessionStorage.removeItem('paystack_reference');
