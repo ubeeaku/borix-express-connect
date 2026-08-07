@@ -1,4 +1,4 @@
-project_id = "xlhbjkkerfprkiqmlaan"
+project_id = "tqixowqmgpgbltfazbpq"
 
 [functions.paystack-initialize]
 verify_jwt = false
