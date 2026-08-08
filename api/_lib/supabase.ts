@@ -21,30 +21,45 @@ const ALLOWED_ORIGIN_DOMAINS = [
   'vercel.app',
 ];
 
-export function corsHeaders(req: Request): Record<string, string> {
-  const origin = req.headers.get('origin') || '';
+export function corsHeaders(req: any): Record<string, string> {
+  const origin =
+    typeof req?.headers?.get === "function"
+      ? req.headers.get("origin") || ""
+      : req?.headers?.origin || "";
+
   let allowedOrigin = `https://${SITE_DOMAIN}`;
+
   try {
     if (origin) {
       const url = new URL(origin);
+
       const ok = ALLOWED_ORIGIN_DOMAINS.some(
-        (d) => url.hostname === d || url.hostname.endsWith(`.${d}`),
+        (d) =>
+          url.hostname === d ||
+          url.hostname.endsWith(`.${d}`),
       );
-      if (ok) allowedOrigin = origin;
+
+      if (ok) {
+        allowedOrigin = origin;
+      }
     }
   } catch {
-    /* keep default */
+    // Keep default
   }
+
   return {
-    'Access-Control-Allow-Origin': allowedOrigin,
-    'Access-Control-Allow-Headers': 'authorization, content-type',
-    'Access-Control-Allow-Methods': 'POST, OPTIONS',
-    'Content-Type': 'application/json',
+    "Access-Control-Allow-Origin": allowedOrigin,
+    "Access-Control-Allow-Headers": "authorization, content-type",
+    "Access-Control-Allow-Methods": "POST, OPTIONS",
+    "Content-Type": "application/json",
   };
 }
 
-export function json(req: Request, status: number, body: unknown) {
-  return new Response(JSON.stringify(body), { status, headers: corsHeaders(req) });
+export function json(req: any, status: number, body: unknown) {
+  return new Response(JSON.stringify(body), {
+    status,
+    headers: corsHeaders(req),
+  });
 }
 
 /** Names of the env vars that must be present for the API routes to work. */
