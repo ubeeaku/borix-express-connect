@@ -23,9 +23,9 @@ const ALLOWED_ORIGIN_DOMAINS = [
 
 export function corsHeaders(req: any): Record<string, string> {
   const origin =
-    typeof req?.headers?.get === "function"
-      ? req.headers.get("origin") || ""
-      : req?.headers?.origin || "";
+    req?.headers?.origin ||
+    req?.headers?.Origin ||
+    '';
 
   let allowedOrigin = `https://${SITE_DOMAIN}`;
 
@@ -36,7 +36,7 @@ export function corsHeaders(req: any): Record<string, string> {
       const ok = ALLOWED_ORIGIN_DOMAINS.some(
         (d) =>
           url.hostname === d ||
-          url.hostname.endsWith(`.${d}`),
+          url.hostname.endsWith(`.${d}`)
       );
 
       if (ok) {
@@ -44,22 +44,23 @@ export function corsHeaders(req: any): Record<string, string> {
       }
     }
   } catch {
-    // Keep default
+    // Keep default origin
   }
 
   return {
-    "Access-Control-Allow-Origin": allowedOrigin,
-    "Access-Control-Allow-Headers": "authorization, content-type",
-    "Access-Control-Allow-Methods": "POST, OPTIONS",
-    "Content-Type": "application/json",
+    'Access-Control-Allow-Origin': allowedOrigin,
+    'Access-Control-Allow-Headers': 'authorization, content-type',
+    'Access-Control-Allow-Methods': 'POST, OPTIONS',
+    'Content-Type': 'application/json',
   };
 }
 
 export function json(req: any, status: number, body: unknown) {
-  return new Response(JSON.stringify(body), {
+  return {
     status,
     headers: corsHeaders(req),
-  });
+    body: JSON.stringify(body),
+  };
 }
 
 /** Names of the env vars that must be present for the API routes to work. */
@@ -81,8 +82,12 @@ export function adminClient(): SupabaseClient {
   });
 }
 
-export async function getUserFromRequest(req: Request) {
-  const authHeader = req.headers.get('authorization');
+export async function getUserFromRequest(req: any) {
+  const authHeader =
+    req?.headers?.authorization ||
+    req?.headers?.Authorization ||
+    '';
+
   if (!authHeader?.startsWith('Bearer ')) return null;
   const client = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
     auth: { persistSession: false, autoRefreshToken: false },
