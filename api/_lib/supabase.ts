@@ -56,12 +56,19 @@ export function corsHeaders(req: any): Record<string, string> {
   };
 }
 
-export function json(req: any, status: number, body: unknown) {
-  return {
-    status,
-    headers: corsHeaders(req),
-    body: JSON.stringify(body),
-  };
+export function json(
+  req: any,
+  res: any,
+  status: number,
+  body: unknown
+) {
+  const headers = corsHeaders(req);
+
+  Object.entries(headers).forEach(([key, value]) => {
+    res.setHeader(key, value);
+  });
+
+  return res.status(status).json(body);
 }
 
 /** Names of the env vars that must be present for the API routes to work. */

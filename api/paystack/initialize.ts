@@ -1,3 +1,5 @@
+import type { VercelRequest, VercelResponse } from '@vercel/node';
+
 import {
   PAYSTACK_BASE,
   SUPABASE_SERVICE_ROLE_KEY,
@@ -10,69 +12,93 @@ import {
   validateBookingInput,
 } from '../_lib/supabase.js';
 
-export const config = { runtime: 'nodejs' };
-
-export default async function handler(req: any, res: any) {
+export default async function handler(
+  req: VercelRequest,
+  res: VercelResponse
+) {
+  // Handle CORS preflight
   if (req.method === 'OPTIONS') {
-    res.statusCode = 204;
-    res.setHeader('Access-Control-Allow-Origin', corsHeaders(req)['Access-Control-Allow-Origin']);
-    res.setHeader('Access-Control-Allow-Headers', 'authorization, content-type');
-    res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
-    res.setHeader('Access-Control-Allow-Credentials', 'true');
-    res.end();
-    return;
+    const headers = corsHeaders(req);
+
+    Object.entries(headers).forEach(([key, value]) => {
+      res.setHeader(key, value);
+    });
+
+    return res.status(204).end();
   }
 
+  // Only POST is allowed
   if (req.method !== 'POST') {
-    res.statusCode = 405;
-    res.setHeader('Content-Type', 'application/json');
-    res.end(JSON.stringify({
+    return json(req, res, 405, {
       success: false,
       error: 'Method not allowed',
-    }));
-    return;
+    });
   }
 
+  // Check required environment variables
   const PAYSTACK_SECRET_KEY = process.env.PAYSTACK_SECRET_KEY;
-  if (!PAYSTACK_SECRET_KEY || !SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
-    return json(req, 503, { success: false, error: 'Payment service unavailable' });
+
+  if (
+    !PAYSTACK_SECRET_KEY ||
+    !SUPABASE_URL ||
+    !SUPABASE_SERVICE_ROLE_KEY
+  ) {
+    return json(req, res, 503, {
+      success: false,
+      error: 'Payment service unavailable',
+    });
   }
 
-  let body: any;
-  try {
-    body = await new Promise((resolve, reject) => {
-  let data = '';
+  // Vercel already parses the request body.
+  const body = req.body;
 
-  req.on('data', (chunk: Buffer) => {
-    data += chunk.toString();
-  });
-
-  req.on('end', () => {
-    try {
-      resolve(JSON.parse(data || '{}'));
-    } catch (error) {
-      reject(error);
-    }
-  });
-
-  req.on('error', reject);
-});
-  } catch {
-    return json(req, 400, { success: false, error: 'Invalid JSON' });
+  if (!body) {
+    return json(req, res, 400, {
+      success: false,
+      error: 'Invalid JSON',
+    });
   }
 
+  // Validate booking input
   const input = validateBookingInput(body);
-  if (!input) return json(req, 400, { success: false, error: 'Invalid or missing fields' });
 
-  const supabase = adminClient();
-  const prep = await prepareDeparture(supabase, input.departureId, input.seats, input.passengers);
-  if ('error' in prep && prep.error) {
-    return json(req, prep.error.status, { success: false, error: prep.error.message });
+  if (!input) {
+    return json(req, res, 400, {
+      success: false,
+      error: 'Invalid or missing fields',
+    });
   }
-  const { departure, passengersInt, amount, commission, driverAmount } = prep as any;
 
+  // Supabase admin client
+  const supabase = adminClient();
+
+  // Validate departure and calculate amount server-side
+  const prep = await prepareDeparture(
+    supabase,
+    input.departureId,
+    input.seats,
+    input.passengers
+  );
+
+  if ('error' in prep && prep.error) {
+    return json(req, res, prep.error.status, {
+      success: false,
+      error: prep.error.message,
+    });
+  }
+
+  const {
+    departure,
+    passengersInt,
+    amount,
+    commission,
+    driverAmount,
+  } = prep as any;
+
+  // Generate booking reference
   const reference = generateReference();
 
+  // Create booking
   const { data: bookingData, error: bookingError } = await supabase
     .from('bookings')
     .insert({
@@ -96,9 +122,15 @@ export default async function handler(req: any, res: any) {
     .single();
 
   if (bookingError || !bookingData) {
-    return json(req, 500, { success: false, error: 'Unable to process booking' });
+    console.error('[paystack/initialize] booking error:', bookingError);
+
+    return json(req, res, 500, {
+      success: false,
+      error: 'Unable to process booking',
+    });
   }
 
+  // Reserve selected seats
   const seatRecords = input.seats.map((seatNumber) => ({
     booking_id: bookingData.id,
     seat_number: seatNumber,
@@ -107,60 +139,150 @@ export default async function handler(req: any, res: any) {
     travel_date: departure.travel_date,
     departure_time: departure.departure_time,
   }));
-  const { error: seatErr } = await supabase.from('booked_seats').insert(seatRecords);
+
+  const { error: seatErr } = await supabase
+    .from('booked_seats')
+    .insert(seatRecords);
+
   if (seatErr) {
-    await supabase.from('bookings').delete().eq('id', bookingData.id);
-    return json(req, 409, { success: false, error: 'Selected seats are no longer available' });
+    console.error('[paystack/initialize] seat error:', seatErr);
+
+    await supabase
+      .from('bookings')
+      .delete()
+      .eq('id', bookingData.id);
+
+    return json(req, res, 409, {
+      success: false,
+      error: 'Selected seats are no longer available',
+    });
   }
 
+  // Roll back booking and seats if Paystack initialization fails
   const rollback = async () => {
-    await supabase.from('booked_seats').delete().eq('booking_id', bookingData.id);
-    await supabase.from('bookings').delete().eq('id', bookingData.id);
+    await supabase
+      .from('booked_seats')
+      .delete()
+      .eq('booking_id', bookingData.id);
+
+    await supabase
+      .from('bookings')
+      .delete()
+      .eq('id', bookingData.id);
   };
 
-  const siteDomain = (process.env.SITE_DOMAIN || 'borixexpress.com').replace(/^https?:\/\//, '');
-  const origin = req.headers.get('origin') || `https://${siteDomain}`;
+  // Determine callback origin
+  const siteDomain = (
+    process.env.SITE_DOMAIN || 'borixexpress.com'
+  ).replace(/^https?:\/\//, '');
 
+  const requestOrigin =
+    typeof req.headers.origin === 'string'
+      ? req.headers.origin
+      : '';
+
+  const allowedOrigins = [
+    `https://${siteDomain}`,
+    `http://localhost:8080`,
+    `http://localhost:5173`,
+  ];
+
+  const origin = allowedOrigins.includes(requestOrigin)
+    ? requestOrigin
+    : `https://${siteDomain}`;
+
+  // Initialize Paystack transaction
   let psData: any;
+
   try {
-    const psRes = await fetch(`${PAYSTACK_BASE}/transaction/initialize`, {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${PAYSTACK_SECRET_KEY}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        email: input.email,
-        amount: amount * 100,
-        reference,
-        callback_url: `${origin}/confirmation`,
-        metadata: {
-          name: input.name,
-          phone: input.phone,
-          departure_id: departure.id,
-          seats: input.seats,
-          custom_fields: [
-            { display_name: 'Passenger Name', variable_name: 'passenger_name', value: input.name },
-            { display_name: 'Phone Number', variable_name: 'phone', value: input.phone },
-            { display_name: 'Seats', variable_name: 'seats', value: input.seats.join(', ') },
-          ],
+    const psRes = await fetch(
+      `${PAYSTACK_BASE}/transaction/initialize`,
+      {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${PAYSTACK_SECRET_KEY}`,
+          'Content-Type': 'application/json',
         },
-      }),
-    });
+        body: JSON.stringify({
+          email: input.email,
+          amount: amount * 100,
+          reference,
+          callback_url: `${origin}/confirmation`,
+          metadata: {
+            name: input.name,
+            phone: input.phone,
+            departure_id: departure.id,
+            seats: input.seats,
+
+            custom_fields: [
+              {
+                display_name: 'Passenger Name',
+                variable_name: 'passenger_name',
+                value: input.name,
+              },
+              {
+                display_name: 'Phone Number',
+                variable_name: 'phone',
+                value: input.phone,
+              },
+              {
+                display_name: 'Seats',
+                variable_name: 'seats',
+                value: input.seats.join(', '),
+              },
+            ],
+          },
+        }),
+      }
+    );
+
     psData = await psRes.json();
-  } catch {
+
+    console.log(
+      '[paystack/initialize] Paystack status:',
+      psRes.status
+    );
+  } catch (error) {
+    console.error(
+      '[paystack/initialize] Paystack request failed:',
+      error
+    );
+
     await rollback();
-    return json(req, 502, { success: false, error: 'Unable to reach payment provider' });
+
+    return json(req, res, 502, {
+      success: false,
+      error: 'Unable to reach payment provider',
+    });
   }
 
+  // Paystack rejected initialization
   if (!psData?.status || !psData?.data?.authorization_url) {
+    console.error(
+      '[paystack/initialize] Paystack response:',
+      psData
+    );
+
     await rollback();
-    return json(req, 502, { success: false, error: 'Unable to initialize payment' });
+
+    return json(req, res, 502, {
+      success: false,
+      error:
+        psData?.message ||
+        'Unable to initialize payment',
+    });
   }
 
-  await supabase.from('bookings').update({ payment_status: 'pending' }).eq('id', bookingData.id);
+  // Mark booking as pending
+  await supabase
+    .from('bookings')
+    .update({
+      payment_status: 'pending',
+    })
+    .eq('id', bookingData.id);
 
-  return json(req, 200, {
+  // Return payment URL to frontend
+  return json(req, res, 200, {
     success: true,
     authorization_url: psData.data.authorization_url,
     reference,
