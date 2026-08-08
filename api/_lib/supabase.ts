@@ -51,6 +51,7 @@ export function corsHeaders(req: any): Record<string, string> {
     'Access-Control-Allow-Origin': allowedOrigin,
     'Access-Control-Allow-Headers': 'authorization, content-type',
     'Access-Control-Allow-Methods': 'POST, OPTIONS',
+    'Access-Control-Allow-Credentials': 'true',
     'Content-Type': 'application/json',
   };
 }
@@ -86,7 +87,9 @@ export async function getUserFromRequest(req: any) {
   const authHeader =
     req?.headers?.authorization ||
     req?.headers?.Authorization ||
-    '';
+    (typeof req?.headers?.get === 'function'
+      ? req.headers.get('authorization')
+      : '');
 
   if (!authHeader?.startsWith('Bearer ')) return null;
   const client = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {

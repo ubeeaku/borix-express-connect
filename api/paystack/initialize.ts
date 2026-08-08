@@ -12,9 +12,26 @@ import {
 
 export const config = { runtime: 'nodejs' };
 
-export default async function handler(req: Request) {
-  if (req.method === 'OPTIONS') return new Response(null, { headers: corsHeaders(req) });
-  if (req.method !== 'POST') return json(req, 405, { success: false, error: 'Method not allowed' });
+export default async function handler(req: any, res: any) {
+  if (req.method === 'OPTIONS') {
+    res.statusCode = 204;
+    res.setHeader('Access-Control-Allow-Origin', corsHeaders(req)['Access-Control-Allow-Origin']);
+    res.setHeader('Access-Control-Allow-Headers', 'authorization, content-type');
+    res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
+    res.setHeader('Access-Control-Allow-Credentials', 'true');
+    res.end();
+    return;
+  }
+
+  if (req.method !== 'POST') {
+    res.statusCode = 405;
+    res.setHeader('Content-Type', 'application/json');
+    res.end(JSON.stringify({
+      success: false,
+      error: 'Method not allowed',
+    }));
+    return;
+  }
 
   const PAYSTACK_SECRET_KEY = process.env.PAYSTACK_SECRET_KEY;
   if (!PAYSTACK_SECRET_KEY || !SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
@@ -23,7 +40,23 @@ export default async function handler(req: Request) {
 
   let body: any;
   try {
-    body = await req.json();
+    body = await new Promise((resolve, reject) => {
+  let data = '';
+
+  req.on('data', (chunk: Buffer) => {
+    data += chunk.toString();
+  });
+
+  req.on('end', () => {
+    try {
+      resolve(JSON.parse(data || '{}'));
+    } catch (error) {
+      reject(error);
+    }
+  });
+
+  req.on('error', reject);
+});
   } catch {
     return json(req, 400, { success: false, error: 'Invalid JSON' });
   }
