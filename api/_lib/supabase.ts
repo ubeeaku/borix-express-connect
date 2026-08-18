@@ -21,30 +21,54 @@ const ALLOWED_ORIGIN_DOMAINS = [
   'vercel.app',
 ];
 
-export function corsHeaders(req: Request): Record<string, string> {
-  const origin = req.headers.get('origin') || '';
+export function corsHeaders(req: any): Record<string, string> {
+  const origin =
+    req?.headers?.origin ||
+    req?.headers?.Origin ||
+    '';
+
   let allowedOrigin = `https://${SITE_DOMAIN}`;
+
   try {
     if (origin) {
       const url = new URL(origin);
+
       const ok = ALLOWED_ORIGIN_DOMAINS.some(
-        (d) => url.hostname === d || url.hostname.endsWith(`.${d}`),
+        (d) =>
+          url.hostname === d ||
+          url.hostname.endsWith(`.${d}`)
       );
-      if (ok) allowedOrigin = origin;
+
+      if (ok) {
+        allowedOrigin = origin;
+      }
     }
   } catch {
-    /* keep default */
+    // Keep default origin
   }
+
   return {
     'Access-Control-Allow-Origin': allowedOrigin,
     'Access-Control-Allow-Headers': 'authorization, content-type',
     'Access-Control-Allow-Methods': 'POST, OPTIONS',
+    'Access-Control-Allow-Credentials': 'true',
     'Content-Type': 'application/json',
   };
 }
 
-export function json(req: Request, status: number, body: unknown) {
-  return new Response(JSON.stringify(body), { status, headers: corsHeaders(req) });
+export function json(
+  req: any,
+  res: any,
+  status: number,
+  body: unknown
+) {
+  const headers = corsHeaders(req);
+
+  Object.entries(headers).forEach(([key, value]) => {
+    res.setHeader(key, value);
+  });
+
+  return res.status(status).json(body);
 }
 
 /** Names of the env vars that must be present for the API routes to work. */
@@ -57,17 +81,34 @@ export function missingEnv(): string[] {
 }
 
 export function adminClient(): SupabaseClient {
-  const missing = missingEnv();
-  if (missing.length) {
-    throw new Error(`Server misconfigured: missing env var(s) ${missing.join(', ')}`);
+  if (!SUPABASE_URL) {
+    throw new Error('Server misconfigured: missing SUPABASE_URL');
   }
-  return createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
-    auth: { persistSession: false, autoRefreshToken: false },
-  });
+
+  if (!SUPABASE_SERVICE_ROLE_KEY) {
+    throw new Error('Server misconfigured: missing SUPABASE_SERVICE_ROLE_KEY');
+  }
+
+  return createClient(
+    SUPABASE_URL,
+    SUPABASE_SERVICE_ROLE_KEY,
+    {
+      auth: {
+        persistSession: false,
+        autoRefreshToken: false,
+      },
+    }
+  );
 }
 
-export async function getUserFromRequest(req: Request) {
-  const authHeader = req.headers.get('authorization');
+export async function getUserFromRequest(req: any) {
+  const authHeader =
+    req?.headers?.authorization ||
+    req?.headers?.Authorization ||
+    (typeof req?.headers?.get === 'function'
+      ? req.headers.get('authorization')
+      : '');
+
   if (!authHeader?.startsWith('Bearer ')) return null;
   const client = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
     auth: { persistSession: false, autoRefreshToken: false },
