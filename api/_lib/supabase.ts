@@ -81,13 +81,24 @@ export function missingEnv(): string[] {
 }
 
 export function adminClient(): SupabaseClient {
-  const missing = missingEnv();
-  if (missing.length) {
-    throw new Error(`Server misconfigured: missing env var(s) ${missing.join(', ')}`);
+  if (!SUPABASE_URL) {
+    throw new Error('Server misconfigured: missing SUPABASE_URL');
   }
-  return createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
-    auth: { persistSession: false, autoRefreshToken: false },
-  });
+
+  if (!SUPABASE_SERVICE_ROLE_KEY) {
+    throw new Error('Server misconfigured: missing SUPABASE_SERVICE_ROLE_KEY');
+  }
+
+  return createClient(
+    SUPABASE_URL,
+    SUPABASE_SERVICE_ROLE_KEY,
+    {
+      auth: {
+        persistSession: false,
+        autoRefreshToken: false,
+      },
+    }
+  );
 }
 
 export async function getUserFromRequest(req: any) {

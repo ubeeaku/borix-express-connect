@@ -70,15 +70,37 @@ export default async function handler(
   }
 
   // Supabase admin client
-  const supabase = adminClient();
+let supabase;
 
-  // Validate departure and calculate amount server-side
-  const prep = await prepareDeparture(
+try {
+  supabase = adminClient();
+} catch (error) {
+  console.error('[paystack/initialize] Supabase configuration error:', error);
+
+  return json(req, res, 500, {
+    success: false,
+    error: 'Server configuration error',
+  });
+}
+
+// Validate departure and calculate amount server-side
+let prep;
+
+try {
+  prep = await prepareDeparture(
     supabase,
     input.departureId,
     input.seats,
     input.passengers
   );
+} catch (error) {
+  console.error('[paystack/initialize] Departure lookup error:', error);
+
+  return json(req, res, 500, {
+    success: false,
+    error: 'Unable to validate departure',
+  });
+}
 
   if ('error' in prep && prep.error) {
     return json(req, res, prep.error.status, {
