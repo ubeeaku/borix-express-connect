@@ -1,30 +1,37 @@
+import type {
+  VercelRequest,
+  VercelResponse,
+} from '@vercel/node';
+
 import {
   PAYSTACK_BASE,
   SUPABASE_SERVICE_ROLE_KEY,
   SUPABASE_URL,
   adminClient,
+  applyCors,
   corsHeaders,
   json,
+  
 } from '../_lib/supabase.js';
 
 export const config = { runtime: 'nodejs' };
 
-export default async function handler(req: Request) {
-  if (req.method === 'OPTIONS') return new Response(null, { headers: corsHeaders(req) });
-  if (req.method !== 'POST') return json(req, 405, { success: false, error: 'Method not allowed' });
+export default async function handler(req: VercelRequest, res: VercelResponse) {
+  if (req.method === 'OPTIONS')  { applyCors(req, res); return res.status(204).end(); }
+  if (req.method !== 'POST') return json(req, res, 405, { success: false, error: 'Method not allowed' });
 
   const PAYSTACK_SECRET_KEY = process.env.PAYSTACK_SECRET_KEY;
   if (!PAYSTACK_SECRET_KEY || !SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
-    return json(req, 503, { success: false, error: 'Payment service unavailable' });
+    return json(req, res, 503, { success: false, error: 'Payment service unavailable' });
   }
 
   let reference = '';
   try {
-    const body = await req.json();
+    const body = req.body;
     reference = String(body?.reference || '');
     if (!/^BRX-[A-Z0-9]{12}$/.test(reference)) throw new Error('bad');
   } catch {
-    return json(req, 400, { success: false, error: 'Invalid reference format' });
+    return json(req, res, 400, { success: false, error: 'Invalid reference format' });
   }
 
   let psData: any;
@@ -35,14 +42,14 @@ export default async function handler(req: Request) {
     );
     psData = await psRes.json();
   } catch {
-    return json(req, 502, { success: false, error: 'Unable to reach payment provider' });
+    return json(req, res, 502, { success: false, error: 'Unable to reach payment provider' });
   }
 
   if (!psData?.status || !psData?.data) {
-    return json(req, 400, { success: false, error: 'Unable to verify payment' });
+    return json(req, res, 400, { success: false, error: 'Unable to verify payment' });
   }
   if (!['success', 'failed', 'pending', 'abandoned'].includes(psData.data.status)) {
-    return json(req, 400, { success: false, error: 'Unable to verify payment status' });
+    return json(req, res,400, { success: false, error: 'Unable to verify payment status' });
   }
 
   const paymentStatus =
@@ -64,7 +71,7 @@ export default async function handler(req: Request) {
     .single();
 
   if (updateError || !booking) {
-    return json(req, 404, { success: false, error: 'Booking not found' });
+    return json(req, res, 404, { success: false, error: 'Booking not found' });
   }
 
   const { data: routeData } = await supabase
@@ -73,7 +80,7 @@ export default async function handler(req: Request) {
     .eq('id', booking.route_id)
     .single();
 
-  return json(req, 200, {
+  return json(req, res,200, {
     success: true,
     status: paymentStatus,
     booking: {

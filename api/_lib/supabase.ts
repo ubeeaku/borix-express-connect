@@ -1,4 +1,5 @@
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
+import type { VercelRequest, VercelResponse } from '@vercel/node';
 
 export const SUPABASE_URL =
   process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || '';
@@ -21,30 +22,53 @@ const ALLOWED_ORIGIN_DOMAINS = [
   'vercel.app',
 ];
 
-export function corsHeaders(req: Request): Record<string, string> {
-  const origin = req.headers.get('origin') || '';
+export function corsHeaders(req: VercelRequest): Record<string, string> {
+  const origin =
+    typeof req.headers.origin === 'string' ? req.headers.origin : '';
+
   let allowedOrigin = `https://${SITE_DOMAIN}`;
+
   try {
     if (origin) {
       const url = new URL(origin);
+
       const ok = ALLOWED_ORIGIN_DOMAINS.some(
-        (d) => url.hostname === d || url.hostname.endsWith(`.${d}`),
+        (d) =>
+          url.hostname === d ||
+          url.hostname.endsWith(`.${d}`),
       );
-      if (ok) allowedOrigin = origin;
+
+      if (ok) {
+        allowedOrigin = origin;
+      }
     }
   } catch {
-    /* keep default */
+    // Keep default origin
   }
+
   return {
     'Access-Control-Allow-Origin': allowedOrigin,
-    'Access-Control-Allow-Headers': 'authorization, content-type',
-    'Access-Control-Allow-Methods': 'POST, OPTIONS',
-    'Content-Type': 'application/json',
+    'Access-Control-Allow-Headers':
+      'authorization, content-type',
+    'Access-Control-Allow-Methods':
+      'GET, POST, OPTIONS',
+    'Access-Control-Allow-Credentials': 'true',
   };
 }
 
-export function json(req: Request, status: number, body: unknown) {
-  return new Response(JSON.stringify(body), { status, headers: corsHeaders(req) });
+export function json(
+  req: VercelRequest,
+  res: VercelResponse,
+  status: number,
+  body: unknown,
+) {
+  const headers = corsHeaders(req);
+
+  Object.entries(headers).forEach(([key, value]) => {
+    res.setHeader(key, value);
+  });
+
+  return res.status(status).json(body);
 }
 
 /** Names of the env vars that must be present for the API routes to work. */
@@ -66,15 +90,38 @@ export function adminClient(): SupabaseClient {
   });
 }
 
-export async function getUserFromRequest(req: Request) {
-  const authHeader = req.headers.get('authorization');
-  if (!authHeader?.startsWith('Bearer ')) return null;
-  const client = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
-    auth: { persistSession: false, autoRefreshToken: false },
-    global: { headers: { Authorization: authHeader } },
-  });
+export async function getUserFromRequest(req: VercelRequest) {
+  const authHeader =
+    typeof req.headers.authorization === 'string'
+      ? req.headers.authorization
+      : null;
+
+  if (!authHeader?.startsWith('Bearer ')) {
+    return null;
+  }
+
+  const client = createClient(
+    SUPABASE_URL,
+    SUPABASE_ANON_KEY,
+    {
+      auth: {
+        persistSession: false,
+        autoRefreshToken: false,
+      },
+      global: {
+        headers: {
+          Authorization: authHeader,
+        },
+      },
+    },
+  );
+
   const { data, error } = await client.auth.getUser();
-  if (error || !data?.user) return null;
+
+  if (error || !data?.user) {
+    return null;
+  }
+
   return data.user;
 }
 
