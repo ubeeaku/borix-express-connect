@@ -5,7 +5,7 @@ import {
   SUPABASE_SERVICE_ROLE_KEY,
   SUPABASE_URL,
   adminClient,
-  corsHeaders,
+  applyCors,
   generateReference,
   json,
   prepareDeparture,
@@ -18,12 +18,7 @@ export default async function handler(
 ) {
   // Handle CORS preflight
   if (req.method === 'OPTIONS') {
-    const headers = corsHeaders(req);
-
-    Object.entries(headers).forEach(([key, value]) => {
-      res.setHeader(key, value);
-    });
-
+    applyCors(req, res);
     return res.status(204).end();
   }
 
