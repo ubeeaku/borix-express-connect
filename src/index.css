@@ -1,8 +1,10 @@
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@400;500;600&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@400;500;600&display=swap');
+
 
 /* Borix Express Design System
    Brand Colors: Midnight Blue #0A1F44, Vibrant Orange #F97316, Light Grey #E5E7EB
