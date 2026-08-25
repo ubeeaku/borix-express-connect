@@ -110,6 +110,7 @@ export default async function handler(
       driver_amount: driverAmount,
       platform_commission: commission,
       payment_status: 'reserved',
+      expires_at: new Date(Date.now() + 15 * 60 * 1000).toISOString(),
       next_of_kin_name: input.nextOfKinName,
       next_of_kin_phone: input.nextOfKinPhone,
     })
