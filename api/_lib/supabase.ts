@@ -24,6 +24,8 @@ const SITE_DOMAIN = (
 
 const ALLOWED_ORIGIN_DOMAINS = [
   SITE_DOMAIN,
+  'localhost',
+  '127.0.0.1',
   'lovable.app',
   'lovable.dev',
   'lovableproject.com',
