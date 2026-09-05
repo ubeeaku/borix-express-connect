@@ -111,45 +111,76 @@ useEffect(() => {
   };
 
   const validateStep = () => {
-    switch (step) {
-      case 1:
-  	if (
-    	  !form.full_name ||
-          !form.phone ||
-          !form.address ||
-          !form.state ||
-          !form.city ||
-          !form.park_id
-        ) {
-          toast({
-            title: "Please fill all required fields",
-            description: "Please select the park you operate from.",
-            variant: "destructive",
-          });
-          return false;
-          }
-      case 2:
-        if (!form.vehicle_ownership || !form.years_experience) {
-          toast({ title: "Please fill all required fields", variant: "destructive" });
-          return false;
-        }
-        return true;
-      case 3:
-        if (!files.drivers_license || !files.nin || !files.passport_photo) {
-          toast({ title: "Please upload all required documents", variant: "destructive" });
-          return false;
-        }
-        return true;
-      case 4:
-        if (!form.guarantor_name || !form.guarantor_phone || !form.bank_account_name || !form.bank_name || !form.bank_account_number) {
-          toast({ title: "Please fill all required fields", variant: "destructive" });
-          return false;
-        }
-        return true;
-      default:
-        return true;
-    }
-  };
+  switch (step) {
+    case 1:
+      if (
+        !form.full_name.trim() ||
+        !form.phone.trim() ||
+        !form.address.trim() ||
+        !form.state ||
+        !form.city.trim() ||
+        !form.park_id
+      ) {
+        toast({
+          title: "Please fill all required fields",
+          description: "Please complete all required personal information and select your operating park.",
+          variant: "destructive",
+        });
+        return false;
+      }
+
+      return true;
+
+    case 2:
+      if (!form.vehicle_ownership || !form.years_experience) {
+        toast({
+          title: "Please fill all required fields",
+          description: "Please provide your driving experience and vehicle information.",
+          variant: "destructive",
+        });
+        return false;
+      }
+
+      return true;
+
+    case 3:
+      if (
+        !files.drivers_license ||
+        !files.nin ||
+        !files.passport_photo
+      ) {
+        toast({
+          title: "Please upload all required documents",
+          description: "Driver's License, NIN and Passport Photograph are required.",
+          variant: "destructive",
+        });
+        return false;
+      }
+
+      return true;
+
+    case 4:
+      if (
+        !form.guarantor_name.trim() ||
+        !form.guarantor_phone.trim() ||
+        !form.bank_account_name.trim() ||
+        !form.bank_name.trim() ||
+        !form.bank_account_number.trim()
+      ) {
+        toast({
+          title: "Please fill all required fields",
+          description: "Please complete the required guarantor and bank information.",
+          variant: "destructive",
+        });
+        return false;
+      }
+
+      return true;
+
+    default:
+      return true;
+  }
+};
 
   const handleNext = () => {
     if (!validateStep()) return;
