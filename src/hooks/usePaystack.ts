@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import { apiUrl } from "@/lib/apiBase";
 
 const API_BASE = "/api/paystack";
@@ -56,7 +56,7 @@ export const usePaystack = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const initializePayment = async (params: PaystackInitParams): Promise<PaystackResponse> => {
+  const initializePayment = useCallback(async (params: PaystackInitParams): Promise<PaystackResponse> => {
     setIsLoading(true);
     setError(null);
     try {
@@ -68,9 +68,9 @@ export const usePaystack = () => {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, []);
 
-  const verifyPayment = async (reference: string): Promise<VerifyResponse> => {
+  const verifyPayment = useCallback(async (reference: string): Promise<VerifyResponse> => {
     setIsLoading(true);
     setError(null);
     try {
@@ -82,7 +82,7 @@ export const usePaystack = () => {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, []);
 
   return { initializePayment, verifyPayment, isLoading, error };
 };

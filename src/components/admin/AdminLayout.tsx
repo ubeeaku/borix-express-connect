@@ -22,6 +22,7 @@ import { useAdminAuth } from "@/hooks/useAdminAuth";
 const sidebarItems = [
   { name: "Dashboard", icon: LayoutDashboard, path: "/admin/dashboard" },
   { name: "Routes", icon: MapPin, path: "/admin/routes" },
+  { name: "Parks", icon: MapPin, path: "/admin/parks" },
   { name: "Trips", icon: Calendar, path: "/admin/trips" },
   { name: "Vehicles", icon: Truck, path: "/admin/vehicles" },
   { name: "Drivers", icon: Users, path: "/admin/drivers" },

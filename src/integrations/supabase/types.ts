@@ -239,6 +239,7 @@ export type Database = {
           guarantor_relationship: string | null
           id: string
           nin_url: string | null
+	  park_id: string | null
           passport_photo_url: string | null
           phone: string
           roadworthiness_url: string | null
@@ -267,6 +268,7 @@ export type Database = {
           guarantor_relationship?: string | null
           id?: string
           nin_url?: string | null
+	  park_id?: string | null
           passport_photo_url?: string | null
           phone: string
           roadworthiness_url?: string | null
@@ -295,6 +297,7 @@ export type Database = {
           guarantor_relationship?: string | null
           id?: string
           nin_url?: string | null
+	  park_id?: string | null
           passport_photo_url?: string | null
           phone?: string
           roadworthiness_url?: string | null
@@ -457,7 +460,8 @@ export type Database = {
           created_at: string
           email: string | null
           full_name: string
-          id: string
+          id: string	
+	  park_id: string | null
           phone: string
           profile_photo_url: string | null
           rating: number | null
@@ -472,6 +476,7 @@ export type Database = {
           email?: string | null
           full_name: string
           id?: string
+	  park_id?: string | null
           phone: string
           profile_photo_url?: string | null
           rating?: number | null
@@ -486,6 +491,7 @@ export type Database = {
           email?: string | null
           full_name?: string
           id?: string
+	  park_id?: string | null
           phone?: string
           profile_photo_url?: string | null
           rating?: number | null

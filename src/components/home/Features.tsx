@@ -1,6 +1,6 @@
 import { motion } from "framer-motion";
 import { Shield, Clock, Armchair, CreditCard, MapPin, Headphones, CheckCircle2 } from "lucide-react";
-import busInterior from "@/assets/bus-interior.jpg.asset.json";
+import busInterior from "@/assets/jos-city.jpg";
 import { useMinRoutePrice } from "@/hooks/useMinRoutePrice";
 
 const features = [
@@ -74,7 +74,7 @@ export const Features = () => {
             className="md:row-span-2 relative rounded-3xl overflow-hidden shadow-lg group min-h-[320px]"
           >
             <img
-              src={busInterior.url}
+              src={busInterior}
               alt="Comfortable reclining seats inside a Borix Express coach"
               width={1200}
               height={912}

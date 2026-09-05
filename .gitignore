@@ -30,3 +30,11 @@ dist-ssr
 
 # Vercel
 .vercel
+# Android release signing key
+borix-express-release.jks
+
+# Android signing credentials
+android/keystore.properties
+
+# Android signing credentials
+android/app/keystore.properties

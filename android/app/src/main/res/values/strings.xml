@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Borix Express</string>
+    <string name="title_activity_main">Borix Express</string>
+    <string name="package_name">com.borixexpress.app</string>
+    <string name="custom_url_scheme">com.borixexpress.app</string>
+</resources>

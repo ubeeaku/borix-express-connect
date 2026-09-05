@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import { ArrowRight, ArrowLeft, Upload, CheckCircle, Loader2, User, Car, FileText, CreditCard } from "lucide-react";
@@ -27,12 +27,16 @@ const nigerianStates = [
   "Yobe", "Zamfara",
 ];
 
+
 const DriverApplication = () => {
   const navigate = useNavigate();
   const [step, setStep] = useState(1);
   const [submitting, setSubmitting] = useState(false);
+  const [parks, setParks] = useState<{ id: string; name: string; city: string }[]>([]);
+  const [loadingParks, setLoadingParks] = useState(true);
   const [form, setForm] = useState({
     full_name: "",
+    park_id: "",
     phone: "",
     email: "",
     address: "",
@@ -56,6 +60,33 @@ const DriverApplication = () => {
     vehicle_papers: null,
     roadworthiness: null,
   });
+
+useEffect(() => {
+  const fetchParks = async () => {
+    setLoadingParks(true);
+
+    const { data, error } = await supabase
+      .from("parks")
+      .select("id, name, city")
+      .eq("status", "active")
+      .order("name", { ascending: true });
+
+    if (error) {
+      console.error("Failed to load parks:", error);
+      toast({
+        title: "Unable to load parks",
+        description: "Please refresh the page and try again.",
+        variant: "destructive",
+      });
+    } else {
+      setParks(data || []);
+    }
+
+    setLoadingParks(false);
+  };
+
+  fetchParks();
+}, []);
 
   const updateForm = (field: string, value: string) => {
     setForm((prev) => ({ ...prev, [field]: value }));
@@ -82,15 +113,21 @@ const DriverApplication = () => {
   const validateStep = () => {
     switch (step) {
       case 1:
-        if (!form.full_name || !form.phone || !form.address || !form.state || !form.city) {
-          toast({ title: "Please fill all required fields", variant: "destructive" });
+  	if (
+    	  !form.full_name ||
+          !form.phone ||
+          !form.address ||
+          !form.state ||
+          !form.city ||
+          !form.park_id
+        ) {
+          toast({
+            title: "Please fill all required fields",
+            description: "Please select the park you operate from.",
+            variant: "destructive",
+          });
           return false;
-        }
-        if (form.phone.length < 10) {
-          toast({ title: "Please enter a valid phone number", variant: "destructive" });
-          return false;
-        }
-        return true;
+          }
       case 2:
         if (!form.vehicle_ownership || !form.years_experience) {
           toast({ title: "Please fill all required fields", variant: "destructive" });
@@ -141,6 +178,7 @@ const DriverApplication = () => {
 
       const { error } = await supabase.from("driver_applications").insert({
         full_name: form.full_name.trim(),
+	      park_id: form.park_id,
         phone: form.phone.trim(),
         email: form.email.trim(),
         address: form.address.trim(),
@@ -230,10 +268,36 @@ const DriverApplication = () => {
                     </div>
                   </div>
                   <div>
-                    <Label>Residential Address *</Label>
-                    <Textarea value={form.address} onChange={(e) => updateForm("address", e.target.value)} placeholder="Your full address" className="mt-1" rows={2} />
-                  </div>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+  		    <Label>Residential Address *</Label>
+  		    <Textarea
+         	      value={form.address}
+    		      onChange={(e) => updateForm("address", e.target.value)}
+    		      placeholder="Your full address"
+    		      className="mt-1"
+    		      rows={2}
+  		    />
+		  </div>
+
+		  <div>
+ 	 	    <Label>Operating Park *</Label>
+  		    <Select
+    		      value={form.park_id}
+    		      onValueChange={(v) => updateForm("park_id", v)}
+  		    >
+    		      <SelectTrigger className="mt-1">
+      			<SelectValue placeholder="Select the park you operate from" />
+    		      </SelectTrigger>
+    		      <SelectContent>
+      			{parks.map((park) => (
+        		  <SelectItem key={park.id} value={park.id}>
+          		    {park.name} — {park.city}
+        		  </SelectItem>
+      			))}
+    		      </SelectContent>
+  		    </Select>
+		  </div>
+		
+		  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                       <Label>State *</Label>
                       <Select value={form.state} onValueChange={(v) => updateForm("state", v)}>

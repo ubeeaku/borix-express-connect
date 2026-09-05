@@ -27,16 +27,22 @@ const DriverLogin = () => {
       if (error) throw new Error(error.message);
       if (!data.user) throw new Error("Authentication failed");
 
-      // Check if user has driver role
-      const { data: roleData, error: roleError } = await supabase.rpc('has_role', {
-        _user_id: data.user.id,
-        _role: 'driver',
-      });
 
-      if (roleError || !roleData) {
-        await supabase.auth.signOut();
-        throw new Error("You do not have driver access. Please contact admin if you've been approved.");
-      }
+      // Check if the authenticated user has the driver role.
+// Querying the user's own role is compatible with the current RLS setup.
+const { data: roleData, error: roleError } = await supabase
+  .from("user_roles")
+  .select("id")
+  .eq("user_id", data.user.id)
+  .eq("role", "driver")
+  .maybeSingle();
+
+if (roleError || !roleData) {
+  await supabase.auth.signOut();
+  throw new Error(
+    "You do not have driver access. Please contact admin if you've been approved."
+  );
+}
 
       // Check if driver record exists and is active
       const { data: driver } = await supabase
