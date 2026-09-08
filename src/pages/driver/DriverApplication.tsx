@@ -116,6 +116,7 @@ useEffect(() => {
       if (
         !form.full_name.trim() ||
         !form.phone.trim() ||
+        !form.email.trim() ||
         !form.address.trim() ||
         !form.state ||
         !form.city.trim() ||
@@ -123,7 +124,15 @@ useEffect(() => {
       ) {
         toast({
           title: "Please fill all required fields",
-          description: "Please complete all required personal information and select your operating park.",
+          description: "Please complete all required personal information, including email, and select your operating park.",
+          variant: "destructive",
+        });
+        return false;
+      }
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email.trim())) {
+        toast({
+          title: "Invalid email address",
+          description: "Please enter a valid email address.",
           variant: "destructive",
         });
         return false;
@@ -294,7 +303,7 @@ useEffect(() => {
                       <Input value={form.phone} onChange={(e) => updateForm("phone", e.target.value)} placeholder="+234..." className="mt-1" />
                     </div>
                     <div>
-                      <Label>Email Address (optional)</Label>
+                      <Label>Email Address *</Label>
                       <Input type="email" value={form.email} onChange={(e) => updateForm("email", e.target.value)} placeholder="email@example.com" className="mt-1" />
                     </div>
                   </div>

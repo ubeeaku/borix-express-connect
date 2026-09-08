@@ -10,9 +10,11 @@ import {
   Search,
   ExternalLink,
 } from "lucide-react";
+
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+
 import {
   Select,
   SelectContent,
@@ -20,6 +22,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+
 import {
   Table,
   TableBody,
@@ -28,6 +31,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+
 import {
   Dialog,
   DialogContent,
@@ -35,14 +39,20 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog";
+
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
+
 import { AdminLayout } from "@/components/admin/AdminLayout";
 import { useAdminAuth } from "@/hooks/useAdminAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 
-type ApplicationStatus = "pending" | "approved" | "rejected" | "suspended";
+type ApplicationStatus =
+  | "pending"
+  | "approved"
+  | "rejected"
+  | "suspended";
 
 type Application = {
   id: string;
@@ -99,10 +109,14 @@ const AdminDriverApplications = () => {
 
   const [applications, setApplications] = useState<Application[]>([]);
   const [parks, setParks] = useState<Record<string, string>>({});
+
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
-  const [selectedApp, setSelectedApp] = useState<Application | null>(null);
+
+  const [selectedApp, setSelectedApp] =
+    useState<Application | null>(null);
+
   const [detailOpen, setDetailOpen] = useState(false);
   const [adminNotes, setAdminNotes] = useState("");
   const [updating, setUpdating] = useState(false);
@@ -120,7 +134,7 @@ const AdminDriverApplications = () => {
 
     const parkMap: Record<string, string> = {};
 
-    (data ?? []).forEach((park) => {
+    (data ?? []).forEach((park: Park) => {
       parkMap[park.id] = `${park.name} — ${park.city}`;
     });
 
@@ -157,165 +171,284 @@ const AdminDriverApplications = () => {
     fetchParks();
   }, [isAdmin]);
 
+  const sendDriverSMS = async (
+    phone: string,
+    message: string,
+    type: string
+  ) => {
+    try {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+
+      if (!session?.access_token) {
+        console.error("No active admin session for SMS");
+        return;
+      }
+
+      const { error } = await supabase.functions.invoke(
+        "send-driver-sms",
+        {
+          body: {
+            phone,
+            message,
+            type,
+          },
+        }
+      );
+
+      if (error) {
+        console.error("SMS notification failed:", error);
+      }
+    } catch (error) {
+      console.error("SMS notification failed:", error);
+    }
+  };
+
   const updateStatus = async (
   id: string,
   status: ApplicationStatus
 ) => {
-    setUpdating(true);
+  if (updating) return;
 
-    const app = applications.find((a) => a.id === id);
+  setUpdating(true);
 
-    if (!app) {
+  const app = applications.find((a) => a.id === id);
+
+  if (!app) {
+    toast({
+      title: "Application not found",
+      variant: "destructive",
+    });
+
+    setUpdating(false);
+    return;
+  }
+
+  if (status === "approved" && !app.park_id) {
+    toast({
+      title: "Operating park required",
+      description:
+        "This application has no operating park assigned. The driver must have an operating park before approval.",
+      variant: "destructive",
+    });
+
+    setUpdating(false);
+    return;
+  }
+
+  try {
+    /*
+     * APPROVAL FLOW
+     *
+     * The create-driver-account Edge Function is responsible for:
+     *
+     * 1. Verifying the admin
+     * 2. Loading the application
+     * 3. Creating the driver's Supabase Auth account
+     * 4. Assigning the driver role
+     * 5. Creating the drivers record
+     * 6. Linking the driver to the application
+     * 7. Marking the application as approved
+     *
+     * The Admin page does NOT directly insert into drivers.
+     */
+
+    if (status === "approved") {
+      const {
+        data: accountResult,
+        error: accountError,
+      } = await supabase.functions.invoke(
+        "create-driver-account",
+        {
+          body: {
+            applicationId: app.id,
+          },
+        }
+      );
+
+      if (accountError) {
+        throw new Error(
+          accountError.message ||
+            "Unable to create the driver account."
+        );
+      }
+
+      if (
+        !accountResult ||
+        accountResult.success === false
+      ) {
+        throw new Error(
+          accountResult?.error ||
+            "Failed to create driver account."
+        );
+      }
+
+      /*
+       * Check whether this driver already had a
+       * fully configured account.
+       */
+      const accountAlreadyExists =
+        accountResult.alreadyExists === true;
+
+      const driverEmail =
+        accountResult.email ||
+        app.email?.trim();
+
+      const temporaryPassword =
+        accountResult.temporaryPassword;
+
+      /*
+       * A newly created account must return a
+       * temporary password.
+       */
+      if (
+        !accountAlreadyExists &&
+        !temporaryPassword
+      ) {
+        throw new Error(
+          "Driver account was created but no temporary password was returned."
+        );
+      }
+
+      /*
+       * Save admin notes separately.
+       *
+       * The Edge Function is responsible for changing
+       * the application status to "approved".
+       */
+      if (adminNotes.trim()) {
+        const { error: notesError } = await supabase
+          .from("driver_applications")
+          .update({
+            admin_notes: adminNotes.trim(),
+          })
+          .eq("id", id);
+
+        if (notesError) {
+          console.error(
+            "Failed to save admin notes:",
+            notesError
+          );
+        }
+      }
+
+      /*
+       * Prepare the SMS.
+       */
+      let smsMessage: string;
+
+      if (accountAlreadyExists) {
+        smsMessage =
+          `Congratulations ${app.full_name}! Your Borix Express driver application has been approved.\n\n` +
+          `Your driver account already exists.\n` +
+          `Login email: ${driverEmail}\n` +
+          `Login: https://borixexpress.com/driver/login\n\n` +
+          `If you do not remember your password, please contact Borix Express admin.`;
+      } else {
+        smsMessage =
+          `Congratulations ${app.full_name}! Your Borix Express driver application has been approved.\n\n` +
+          `Driver Login\n` +
+          `Email: ${driverEmail}\n` +
+          `Temporary Password: ${temporaryPassword}\n\n` +
+          `Login: https://borixexpress.com/driver/login\n\n` +
+          `Please change your password after your first login.`;
+      }
+
+      /*
+       * Send the login information to the driver.
+       */
+      if (app.phone) {
+        await sendDriverSMS(
+          app.phone,
+          smsMessage,
+          "application_approved"
+        );
+      }
+
       toast({
-        title: "Application not found",
-        variant: "destructive",
+        title: "Driver approved successfully",
+        description: accountAlreadyExists
+          ? `${app.full_name}'s application has been approved. Their existing driver account can be used to log in.`
+          : `${app.full_name} has been approved, their driver account has been created, and the login credentials were sent by SMS.`,
       });
-      setUpdating(false);
-      return;
-    }
-
-    if (status === "approved" && !app.park_id) {
-      toast({
-        title: "Operating park required",
-        description:
-          "This application has no operating park assigned. Ask the applicant to select a park before approval.",
-        variant: "destructive",
-      });
-      setUpdating(false);
-      return;
-    }
-
-    try {
-      const { error: applicationError } = await supabase
-        .from("driver_applications")
-        .update({status,admin_notes: adminNotes.trim() || null,})
-        .eq("id", id);
+    } else {
+      /*
+       * Rejection / suspension / pending updates.
+       *
+       * These statuses do not create a driver account.
+       */
+      const { error: applicationError } =
+        await supabase
+          .from("driver_applications")
+          .update({
+            status,
+            admin_notes: adminNotes.trim() || null,
+          })
+          .eq("id", id);
 
       if (applicationError) {
         throw applicationError;
       }
 
-      /*
-       * When an application is approved, create or update the
-       * corresponding operational driver record.
-       *
-       * A user_id is intentionally left null here. The driver
-       * authentication account can be linked separately.
-       */
-      if (status === "approved") {
-        const { data: existingDriver, error: lookupError } = await supabase
-          .from("drivers")
-          .select("id")
-          .eq("application_id", app.id)
-          .maybeSingle();
+      const smsMessages: Record<string, string> = {
+        rejected: `Dear ${app.full_name}, unfortunately your Borix Express driver application was not approved at this time. Please contact us for more information.`,
+        suspended: `Dear ${app.full_name}, your Borix Express driver account has been suspended. Please contact Borix Express admin for details.`,
+      };
 
-        if (lookupError) {
-          throw lookupError;
-        }
-
-        if (existingDriver) {
-          const { error: driverUpdateError } = await supabase
-            .from("drivers")
-            .update({
-              full_name: app.full_name,
-              phone: app.phone,
-              email: app.email || null,
-              park_id: app.park_id,
-              status: "active",
-              updated_at: new Date().toISOString(),
-            })
-            .eq("id", existingDriver.id);
-
-          if (driverUpdateError) {
-            throw driverUpdateError;
-          }
-        } else {
-          const { error: driverInsertError } = await supabase
-            .from("drivers")
-            .insert({
-              user_id: null,
-              application_id: app.id,
-              full_name: app.full_name,
-              phone: app.phone,
-              email: app.email || null,
-              park_id: app.park_id,
-              status: "active",
-            });
-
-          if (driverInsertError) {
-            throw driverInsertError;
-          }
-        }
+      if (smsMessages[status] && app.phone) {
+        await sendDriverSMS(
+          app.phone,
+          smsMessages[status],
+          `application_${status}`
+        );
       }
 
       toast({
         title: `Application ${status}`,
         description:
-          status === "approved"
-            ? `${app.full_name} has been added as an active driver.`
-            : undefined,
+          status === "rejected"
+            ? `${app.full_name}'s application has been rejected.`
+            : status === "suspended"
+              ? `${app.full_name}'s application has been suspended.`
+              : `${app.full_name}'s application is pending.`,
       });
-
-      // Send SMS notification
-      if (app.phone) {
-        const smsMessages: Record<string, string> = {
-          approved: `Congratulations ${app.full_name}! Your Borix Express driver application has been approved. You will receive login details shortly.`,
-          rejected: `Dear ${app.full_name}, unfortunately your Borix Express driver application was not approved at this time. Please contact us for more info.`,
-          suspended: `Dear ${app.full_name}, your Borix Express driver account has been suspended. Please contact admin for details.`,
-        };
-
-        if (smsMessages[status]) {
-          try {
-            const {
-              data: { session },
-            } = await supabase.auth.getSession();
-
-            await fetch(
-              `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/send-driver-sms`,
-              {
-                method: "POST",
-                headers: {
-                  "Content-Type": "application/json",
-                  Authorization: `Bearer ${session?.access_token}`,
-                },
-                body: JSON.stringify({
-                  phone: app.phone,
-                  message: smsMessages[status],
-                  type: `application_${status}`,
-                }),
-              }
-            );
-          } catch (smsError) {
-            console.error("SMS notification failed:", smsError);
-          }
-        }
-      }
-
-      await fetchApplications();
-      setDetailOpen(false);
-      setSelectedApp(null);
-    } catch (error) {
-      console.error("Status update failed:", error);
-
-      toast({
-        title: "Failed to update application",
-        description:
-          error instanceof Error ? error.message : "An unexpected error occurred.",
-        variant: "destructive",
-      });
-    } finally {
-      setUpdating(false);
     }
-  };
+
+    await fetchApplications();
+
+    setDetailOpen(false);
+    setSelectedApp(null);
+  } catch (error) {
+    console.error("Status update failed:", error);
+
+    toast({
+      title:
+        status === "approved"
+          ? "Failed to approve application"
+          : "Failed to update application",
+      description:
+        error instanceof Error
+          ? error.message
+          : "An unexpected error occurred.",
+      variant: "destructive",
+    });
+  } finally {
+    setUpdating(false);
+  }
+};
 
   const ownershipLabel = (value: string) => {
     switch (value) {
       case "own_sienna":
         return "Owns Sienna";
+
       case "own_sharon":
         return "Owns Sharon";
+
       case "partnership":
         return "Needs Partnership";
+
       default:
         return value;
     }
@@ -330,7 +463,8 @@ const AdminDriverApplications = () => {
       app.phone.includes(search);
 
     const matchStatus =
-      statusFilter === "all" || app.status === statusFilter;
+      statusFilter === "all" ||
+      app.status === statusFilter;
 
     return matchSearch && matchStatus;
   });
@@ -359,34 +493,59 @@ const AdminDriverApplications = () => {
             <Input
               placeholder="Search by name, email, or phone..."
               value={search}
-              onChange={(e) => setSearch(e.target.value.slice(0, 50))}
+              onChange={(e) =>
+                setSearch(e.target.value.slice(0, 50))
+              }
               className="pl-10"
             />
           </div>
 
-          <Select value={statusFilter} onValueChange={setStatusFilter}>
+          <Select
+            value={statusFilter}
+            onValueChange={setStatusFilter}
+          >
             <SelectTrigger className="w-40">
               <SelectValue />
             </SelectTrigger>
 
             <SelectContent>
-              <SelectItem value="all">All Status</SelectItem>
-              <SelectItem value="pending">Pending</SelectItem>
-              <SelectItem value="approved">Approved</SelectItem>
-              <SelectItem value="rejected">Rejected</SelectItem>
-              <SelectItem value="suspended">Suspended</SelectItem>
+              <SelectItem value="all">
+                All Status
+              </SelectItem>
+
+              <SelectItem value="pending">
+                Pending
+              </SelectItem>
+
+              <SelectItem value="approved">
+                Approved
+              </SelectItem>
+
+              <SelectItem value="rejected">
+                Rejected
+              </SelectItem>
+
+              <SelectItem value="suspended">
+                Suspended
+              </SelectItem>
             </SelectContent>
           </Select>
         </div>
 
         {/* Stats */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          {["pending", "approved", "rejected", "suspended"].map((status) => {
+          {[
+            "pending",
+            "approved",
+            "rejected",
+            "suspended",
+          ].map((status) => {
             const count = applications.filter(
               (app) => app.status === status
             ).length;
 
-            const Icon = statusIcons[status];
+            const Icon =
+              statusIcons[status] || Clock;
 
             return (
               <div
@@ -395,10 +554,15 @@ const AdminDriverApplications = () => {
               >
                 <div className="flex items-center gap-2">
                   <Icon className="w-4 h-4" />
-                  <span className="font-bold capitalize">{status}</span>
+
+                  <span className="font-bold capitalize">
+                    {status}
+                  </span>
                 </div>
 
-                <p className="text-2xl font-bold mt-1">{count}</p>
+                <p className="text-2xl font-bold mt-1">
+                  {count}
+                </p>
               </div>
             );
           })}
@@ -425,7 +589,9 @@ const AdminDriverApplications = () => {
                   <TableHead>Experience</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Date</TableHead>
-                  <TableHead className="w-20">Actions</TableHead>
+                  <TableHead className="w-20">
+                    Actions
+                  </TableHead>
                 </TableRow>
               </TableHeader>
 
@@ -441,7 +607,9 @@ const AdminDriverApplications = () => {
                   </TableRow>
                 ) : (
                   filtered.map((app) => {
-                    const StatusIcon = statusIcons[app.status] || Clock;
+                    const StatusIcon =
+                      statusIcons[app.status] ||
+                      Clock;
 
                     return (
                       <TableRow key={app.id}>
@@ -450,7 +618,9 @@ const AdminDriverApplications = () => {
                         </TableCell>
 
                         <TableCell>
-                          <div className="text-sm">{app.phone}</div>
+                          <div className="text-sm">
+                            {app.phone}
+                          </div>
 
                           {app.email && (
                             <div className="text-xs text-muted-foreground">
@@ -461,12 +631,15 @@ const AdminDriverApplications = () => {
 
                         <TableCell className="text-sm">
                           {app.park_id
-                            ? parks[app.park_id] || "Unknown Park"
+                            ? parks[app.park_id] ||
+                              "Unknown Park"
                             : "Not selected"}
                         </TableCell>
 
                         <TableCell className="text-sm">
-                          {ownershipLabel(app.vehicle_ownership)}
+                          {ownershipLabel(
+                            app.vehicle_ownership
+                          )}
                         </TableCell>
 
                         <TableCell>
@@ -475,7 +648,10 @@ const AdminDriverApplications = () => {
 
                         <TableCell>
                           <Badge
-                            className={`${statusColors[app.status]} hover:${statusColors[app.status]}`}
+                            className={
+                              statusColors[app.status] ||
+                              ""
+                            }
                           >
                             <StatusIcon className="w-3 h-3 mr-1" />
                             {app.status}
@@ -483,14 +659,18 @@ const AdminDriverApplications = () => {
                         </TableCell>
 
                         <TableCell className="text-sm text-muted-foreground">
-                          {new Date(app.created_at).toLocaleDateString()}
+                          {new Date(
+                            app.created_at
+                          ).toLocaleDateString()}
                         </TableCell>
 
                         <TableCell>
                           <Button
                             variant="ghost"
                             size="icon"
-                            onClick={() => openApplication(app)}
+                            onClick={() =>
+                              openApplication(app)
+                            }
                           >
                             <Eye className="w-4 h-4" />
                           </Button>
@@ -506,7 +686,10 @@ const AdminDriverApplications = () => {
       </div>
 
       {/* Application Details */}
-      <Dialog open={detailOpen} onOpenChange={setDetailOpen}>
+      <Dialog
+        open={detailOpen}
+        onOpenChange={setDetailOpen}
+      >
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           {selectedApp && (
             <>
@@ -518,7 +701,7 @@ const AdminDriverApplications = () => {
               </DialogHeader>
 
               <div className="space-y-6 text-sm">
-                {/* Personal */}
+                {/* Personal Information */}
                 <div>
                   <h3 className="font-semibold text-foreground mb-2">
                     Personal Information
@@ -526,27 +709,37 @@ const AdminDriverApplications = () => {
 
                   <div className="grid grid-cols-2 gap-3 bg-muted rounded-lg p-3">
                     <div>
-                      <span className="text-muted-foreground">Phone:</span>{" "}
+                      <span className="text-muted-foreground">
+                        Phone:
+                      </span>{" "}
                       {selectedApp.phone}
                     </div>
 
                     <div>
-                      <span className="text-muted-foreground">Email:</span>{" "}
+                      <span className="text-muted-foreground">
+                        Email:
+                      </span>{" "}
                       {selectedApp.email || "—"}
                     </div>
 
                     <div className="col-span-2">
-                      <span className="text-muted-foreground">Address:</span>{" "}
+                      <span className="text-muted-foreground">
+                        Address:
+                      </span>{" "}
                       {selectedApp.address}
                     </div>
 
                     <div>
-                      <span className="text-muted-foreground">State:</span>{" "}
+                      <span className="text-muted-foreground">
+                        State:
+                      </span>{" "}
                       {selectedApp.state}
                     </div>
 
                     <div>
-                      <span className="text-muted-foreground">City:</span>{" "}
+                      <span className="text-muted-foreground">
+                        City:
+                      </span>{" "}
                       {selectedApp.city}
                     </div>
 
@@ -555,7 +748,8 @@ const AdminDriverApplications = () => {
                         Operating Park:
                       </span>{" "}
                       {selectedApp.park_id
-                        ? parks[selectedApp.park_id] || "Unknown Park"
+                        ? parks[selectedApp.park_id] ||
+                          "Unknown Park"
                         : "Not selected"}
                     </div>
                   </div>
@@ -579,7 +773,9 @@ const AdminDriverApplications = () => {
                       <span className="text-muted-foreground">
                         Vehicle:
                       </span>{" "}
-                      {ownershipLabel(selectedApp.vehicle_ownership)}
+                      {ownershipLabel(
+                        selectedApp.vehicle_ownership
+                      )}
                     </div>
 
                     {selectedApp.vehicle_details && (
@@ -654,12 +850,16 @@ const AdminDriverApplications = () => {
 
                   <div className="grid grid-cols-2 gap-3 bg-muted rounded-lg p-3">
                     <div>
-                      <span className="text-muted-foreground">Name:</span>{" "}
+                      <span className="text-muted-foreground">
+                        Name:
+                      </span>{" "}
                       {selectedApp.guarantor_name}
                     </div>
 
                     <div>
-                      <span className="text-muted-foreground">Phone:</span>{" "}
+                      <span className="text-muted-foreground">
+                        Phone:
+                      </span>{" "}
                       {selectedApp.guarantor_phone}
                     </div>
 
@@ -698,7 +898,9 @@ const AdminDriverApplications = () => {
                     </div>
 
                     <div>
-                      <span className="text-muted-foreground">Bank:</span>{" "}
+                      <span className="text-muted-foreground">
+                        Bank:
+                      </span>{" "}
                       {selectedApp.bank_name}
                     </div>
 
@@ -717,7 +919,9 @@ const AdminDriverApplications = () => {
 
                   <Textarea
                     value={adminNotes}
-                    onChange={(e) => setAdminNotes(e.target.value)}
+                    onChange={(e) =>
+                      setAdminNotes(e.target.value)
+                    }
                     placeholder="Add notes about this application..."
                     className="mt-1"
                     rows={3}
@@ -730,11 +934,19 @@ const AdminDriverApplications = () => {
                   <Button
                     variant="destructive"
                     onClick={() =>
-                      updateStatus(selectedApp.id, "rejected")
+                      updateStatus(
+                        selectedApp.id,
+                        "rejected"
+                      )
                     }
                     disabled={updating}
                   >
-                    <XCircle className="w-4 h-4 mr-1" />
+                    {updating ? (
+                      <Loader2 className="w-4 h-4 mr-1 animate-spin" />
+                    ) : (
+                      <XCircle className="w-4 h-4 mr-1" />
+                    )}
+
                     Reject
                   </Button>
                 )}
@@ -744,7 +956,10 @@ const AdminDriverApplications = () => {
                     <Button
                       variant="outline"
                       onClick={() =>
-                        updateStatus(selectedApp.id, "suspended")
+                        updateStatus(
+                          selectedApp.id,
+                          "suspended"
+                        )
                       }
                       disabled={updating}
                     >
@@ -755,7 +970,10 @@ const AdminDriverApplications = () => {
                 {selectedApp.status !== "approved" && (
                   <Button
                     onClick={() =>
-                      updateStatus(selectedApp.id, "approved")
+                      updateStatus(
+                        selectedApp.id,
+                        "approved"
+                      )
                     }
                     disabled={updating}
                     className="bg-green-600 hover:bg-green-700 text-white"
@@ -763,12 +981,12 @@ const AdminDriverApplications = () => {
                     {updating ? (
                       <>
                         <Loader2 className="w-4 h-4 mr-1 animate-spin" />
-                        Processing...
+                        Creating Driver Account...
                       </>
                     ) : (
                       <>
                         <CheckCircle className="w-4 h-4 mr-1" />
-                        Approve
+                        Approve & Create Account
                       </>
                     )}
                   </Button>
