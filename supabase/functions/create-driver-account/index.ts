@@ -7,10 +7,10 @@ const corsHeaders = {
   "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
 
-const jsonResponse = (
+function jsonResponse(
   body: Record<string, unknown>,
   status = 200,
-) => {
+) {
   return new Response(JSON.stringify(body), {
     status,
     headers: {
@@ -18,120 +18,106 @@ const jsonResponse = (
       "Content-Type": "application/json",
     },
   });
-};
+}
 
-Deno.serve(async (req: Request) => {
-  // -----------------------------------------
-  // CORS
-  // -----------------------------------------
+Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
-    return new Response(null, {
-      status: 204,
+    return new Response("ok", {
       headers: corsHeaders,
     });
   }
 
-  // -----------------------------------------
-  // Only allow POST
-  // -----------------------------------------
   if (req.method !== "POST") {
     return jsonResponse(
       {
         success: false,
-        error: "Method not allowed",
+        error: "Method not allowed.",
       },
       405,
     );
   }
 
   try {
-    // -----------------------------------------
-    // 1. Environment variables
-    // -----------------------------------------
     const supabaseUrl = Deno.env.get("SUPABASE_URL");
     const serviceRoleKey = Deno.env.get(
       "SUPABASE_SERVICE_ROLE_KEY",
     );
 
     if (!supabaseUrl || !serviceRoleKey) {
-      console.error(
-        "Missing Supabase environment variables",
-      );
-
       return jsonResponse(
         {
           success: false,
-          error:
-            "Supabase environment variables are not configured",
+          error: "Supabase environment variables are not configured.",
         },
         500,
       );
     }
 
-    // -----------------------------------------
-    // 2. Admin Supabase client
-    // -----------------------------------------
     const supabaseAdmin = createClient(
       supabaseUrl,
       serviceRoleKey,
+      {
+        auth: {
+          autoRefreshToken: false,
+          persistSession: false,
+        },
+      },
     );
 
-    // -----------------------------------------
-    // 3. Get authorization header
-    // -----------------------------------------
-    const authHeader = req.headers.get("authorization");
+    // ---------------------------------------------------------
+    // Verify the authenticated user
+    // ---------------------------------------------------------
+
+    const authHeader = req.headers.get("Authorization");
 
     if (!authHeader) {
       return jsonResponse(
         {
           success: false,
-          error: "Unauthorized",
+          error: "Missing authorization header.",
         },
         401,
       );
     }
 
-    const token = authHeader.replace(
-      /^Bearer\s+/i,
-      "",
-    );
+    const token = authHeader.replace("Bearer ", "").trim();
 
     if (!token) {
       return jsonResponse(
         {
           success: false,
-          error: "Invalid authorization token",
+          error: "Missing access token.",
         },
         401,
       );
     }
 
-    // -----------------------------------------
-    // 4. Verify logged-in user
-    // -----------------------------------------
     const {
-      data: { user },
+      data: {
+        user,
+      },
       error: userError,
     } = await supabaseAdmin.auth.getUser(token);
 
     if (userError || !user) {
       console.error(
-        "User verification failed:",
+        "Authentication verification failed:",
         userError,
       );
 
       return jsonResponse(
         {
           success: false,
-          error: "Unauthorized",
+          error: "Invalid or expired authentication token.",
         },
         401,
       );
     }
 
-    // -----------------------------------------
-    // 5. Verify admin role
-    // -----------------------------------------
+    // ---------------------------------------------------------
+    // Verify that the user is an admin
+    // ---------------------------------------------------------
+
     const {
       data: isAdmin,
       error: adminError,
@@ -141,14 +127,14 @@ Deno.serve(async (req: Request) => {
 
     if (adminError) {
       console.error(
-        "Admin role check failed:",
+        "Admin verification failed:",
         adminError,
       );
 
       return jsonResponse(
         {
           success: false,
-          error: "Unable to verify admin access",
+          error: "Unable to verify administrator access.",
         },
         500,
       );
@@ -158,15 +144,16 @@ Deno.serve(async (req: Request) => {
       return jsonResponse(
         {
           success: false,
-          error: "Admin access required",
+          error: "Administrator access required.",
         },
         403,
       );
     }
 
-    // -----------------------------------------
-    // 6. Read request body
-    // -----------------------------------------
+    // ---------------------------------------------------------
+    // Parse request
+    // ---------------------------------------------------------
+
     let body: {
       applicationId?: string;
     };
@@ -177,7 +164,7 @@ Deno.serve(async (req: Request) => {
       return jsonResponse(
         {
           success: false,
-          error: "Invalid JSON request body",
+          error: "Invalid request body.",
         },
         400,
       );
@@ -189,15 +176,16 @@ Deno.serve(async (req: Request) => {
       return jsonResponse(
         {
           success: false,
-          error: "Application ID is required",
+          error: "Application ID is required.",
         },
         400,
       );
     }
 
-    // -----------------------------------------
-    // 7. Get driver application
-    // -----------------------------------------
+    // ---------------------------------------------------------
+    // Get driver application
+    // ---------------------------------------------------------
+
     const {
       data: application,
       error: applicationError,
@@ -209,22 +197,23 @@ Deno.serve(async (req: Request) => {
 
     if (applicationError || !application) {
       console.error(
-        "Driver application lookup failed:",
+        "Failed to find driver application:",
         applicationError,
       );
 
       return jsonResponse(
         {
           success: false,
-          error: "Driver application not found",
+          error: "Driver application not found.",
         },
         404,
       );
     }
 
-    // -----------------------------------------
-    // 8. Validate application
-    // -----------------------------------------
+    // ---------------------------------------------------------
+    // Validate application status
+    // ---------------------------------------------------------
+
     if (
       application.status !== "pending" &&
       application.status !== "approved"
@@ -239,69 +228,68 @@ Deno.serve(async (req: Request) => {
       );
     }
 
-    // -----------------------------------------
-    // 9. Validate park
-    // -----------------------------------------
+    // ---------------------------------------------------------
+    // Validate park
+    // ---------------------------------------------------------
+
     if (!application.park_id) {
       return jsonResponse(
         {
           success: false,
           error:
-            "Driver application must have an operating park before approval.",
+            "This application does not have a park assigned. Please assign a park before approving the driver.",
         },
         400,
       );
     }
 
-    // -----------------------------------------
-    // 10. Validate email
-    // -----------------------------------------
-    const driverEmail = application.email
-      ?.trim()
-      .toLowerCase();
+    // ---------------------------------------------------------
+    // Validate email
+    // ---------------------------------------------------------
 
-    if (!driverEmail) {
+    const email = application.email?.trim().toLowerCase();
+
+    if (!email) {
       return jsonResponse(
         {
           success: false,
           error:
-            "Driver must have an email address before an account can be created.",
+            "This driver application does not have an email address. Please update the application before approving.",
         },
         400,
       );
     }
 
-    // -----------------------------------------
-    // 11. Check existing driver record
-    // -----------------------------------------
+    // ---------------------------------------------------------
+    // Check whether a driver record already exists
+    // ---------------------------------------------------------
+
     const {
       data: existingDriver,
       error: existingDriverError,
     } = await supabaseAdmin
       .from("drivers")
       .select("*")
-      .eq("application_id", application.id)
+      .eq("application_id", applicationId)
       .maybeSingle();
 
     if (existingDriverError) {
       console.error(
-        "Driver lookup failed:",
+        "Failed to check existing driver:",
         existingDriverError,
       );
 
       return jsonResponse(
         {
           success: false,
-          error:
-            "Unable to check existing driver record",
+          error: "Unable to check existing driver account.",
         },
         500,
       );
     }
 
-    // -----------------------------------------
-    // 12. Already fully configured driver
-    // -----------------------------------------
+    // If the driver already has an account and the application is
+    // approved, don't create another account.
     if (
       existingDriver?.user_id &&
       application.status === "approved"
@@ -311,59 +299,46 @@ Deno.serve(async (req: Request) => {
         alreadyExists: true,
         driverId: existingDriver.id,
         userId: existingDriver.user_id,
-        email: driverEmail,
-        message: "Driver account already exists",
+        email: existingDriver.email || email,
+        message:
+          "Driver account already exists and the application is approved.",
       });
     }
 
-    // -----------------------------------------
-    // 13. Temporary password
-    // -----------------------------------------
-    const temporaryPassword =
-      crypto.randomUUID().replace(/-/g, "").slice(0, 12) +
-      "A1!";
+    // ---------------------------------------------------------
+    // Generate temporary password
+    // ---------------------------------------------------------
 
-    // -----------------------------------------
-    // 14. Create Auth account
-    // -----------------------------------------
+    const temporaryPassword =
+      `${crypto.randomUUID().replace(/-/g, "").slice(0, 8)}B!9`;
+
+    // ---------------------------------------------------------
+    // Create Supabase Auth user
+    // ---------------------------------------------------------
+
     const {
       data: createdUserData,
       error: createUserError,
     } = await supabaseAdmin.auth.admin.createUser({
-      email: driverEmail,
+      email,
       password: temporaryPassword,
       email_confirm: true,
       user_metadata: {
         full_name: application.full_name,
         phone: application.phone,
-        account_type: "driver",
+        role: "driver",
       },
     });
 
-    let authUser: {
-      id: string;
-      email?: string | null;
-    } | null = null;
-
-    let createdNewAuthUser = false;
-
-    if (createUserError) {
+    if (createUserError || !createdUserData.user) {
       console.error(
-        "Auth account creation failed:",
+        "Failed to create driver auth account:",
         createUserError,
       );
 
-      /*
-       * Do NOT automatically take over an existing
-       * Supabase account.
-       *
-       * If this email already belongs to another user,
-       * the admin should resolve the email conflict
-       * instead of receiving a password that may not work.
-       */
       if (
-        createUserError.message
-          .toLowerCase()
+        createUserError?.message
+          ?.toLowerCase()
           .includes("already")
       ) {
         return jsonResponse(
@@ -379,40 +354,33 @@ Deno.serve(async (req: Request) => {
       return jsonResponse(
         {
           success: false,
-          error: createUserError.message,
+          error:
+            createUserError?.message ||
+            "Failed to create driver authentication account.",
         },
-        400,
+        500,
       );
     }
 
-    if (!createdUserData.user) {
-      throw new Error(
-        "Supabase did not return the created user",
+    const userId = createdUserData.user.id;
+
+    // ---------------------------------------------------------
+    // Assign driver role
+    // ---------------------------------------------------------
+
+    const {
+      error: roleError,
+    } = await supabaseAdmin
+      .from("user_roles")
+      .upsert(
+        {
+          user_id: userId,
+          role: "driver",
+        },
+        {
+          onConflict: "user_id,role",
+        },
       );
-    }
-
-    authUser = {
-      id: createdUserData.user.id,
-      email: createdUserData.user.email,
-    };
-
-    createdNewAuthUser = true;
-
-    // -----------------------------------------
-    // 15. Assign driver role
-    // -----------------------------------------
-    const { error: roleError } =
-      await supabaseAdmin
-        .from("user_roles")
-        .upsert(
-          {
-            user_id: authUser.id,
-            role: "driver",
-          },
-          {
-            onConflict: "user_id,role",
-          },
-        );
 
     if (roleError) {
       console.error(
@@ -420,91 +388,109 @@ Deno.serve(async (req: Request) => {
         roleError,
       );
 
-      // Clean up newly-created Auth user
-      if (createdNewAuthUser) {
-        await supabaseAdmin.auth.admin.deleteUser(
-          authUser.id,
-        );
-      }
+      // Clean up Auth user if role assignment fails.
+      await supabaseAdmin.auth.admin.deleteUser(userId);
 
-      throw roleError;
+      return jsonResponse(
+        {
+          success: false,
+          error:
+            "Driver account was created, but the driver role could not be assigned.",
+        },
+        500,
+      );
     }
 
-    // -----------------------------------------
-    // 16. Create or update driver record
-    // -----------------------------------------
-    let driverId = existingDriver?.id ?? null;
+    // ---------------------------------------------------------
+    // Create or update driver record
+    // ---------------------------------------------------------
+
+    let driverId: string | undefined;
 
     if (existingDriver) {
       const {
-        error: driverUpdateError,
+        data: updatedDriver,
+        error: updateDriverError,
       } = await supabaseAdmin
         .from("drivers")
         .update({
-          user_id: authUser.id,
-          application_id: application.id,
+          user_id: userId,
+          application_id: applicationId,
           full_name: application.full_name,
           phone: application.phone,
-          email: driverEmail,
+          email,
           park_id: application.park_id,
           status: "active",
           updated_at: new Date().toISOString(),
         })
-        .eq("id", existingDriver.id);
+        .eq("id", existingDriver.id)
+        .select("id")
+        .single();
 
-      if (driverUpdateError) {
+      if (updateDriverError || !updatedDriver) {
         console.error(
-          "Failed to update driver:",
-          driverUpdateError,
+          "Failed to update driver record:",
+          updateDriverError,
         );
 
-        if (createdNewAuthUser) {
-          await supabaseAdmin.auth.admin.deleteUser(
-            authUser.id,
-          );
-        }
+        // Clean up Auth user if driver record fails.
+        await supabaseAdmin.auth.admin.deleteUser(userId);
 
-        throw driverUpdateError;
+        return jsonResponse(
+          {
+            success: false,
+            error:
+              "Driver account was created, but the driver record could not be updated.",
+          },
+          500,
+        );
       }
+
+      driverId = updatedDriver.id;
     } else {
       const {
-        data: driver,
-        error: driverInsertError,
+        data: newDriver,
+        error: driverError,
       } = await supabaseAdmin
         .from("drivers")
         .insert({
-          user_id: authUser.id,
-          application_id: application.id,
+          user_id: userId,
+          application_id: applicationId,
           full_name: application.full_name,
           phone: application.phone,
-          email: driverEmail,
+          email,
           park_id: application.park_id,
           status: "active",
         })
         .select("id")
         .single();
 
-      if (driverInsertError) {
+      if (driverError || !newDriver) {
         console.error(
           "Failed to create driver record:",
-          driverInsertError,
+          driverError,
         );
 
-        if (createdNewAuthUser) {
-          await supabaseAdmin.auth.admin.deleteUser(
-            authUser.id,
-          );
-        }
+        // Clean up Auth user if driver record fails.
+        await supabaseAdmin.auth.admin.deleteUser(userId);
 
-        throw driverInsertError;
+        return jsonResponse(
+          {
+            success: false,
+            error:
+              "Driver account was created, but the driver record could not be created.",
+          },
+          500,
+        );
       }
 
-      driverId = driver.id;
+      driverId = newDriver.id;
     }
 
-    // -----------------------------------------
-    // 17. Mark application as approved
-    // -----------------------------------------
+    // ---------------------------------------------------------
+    // Approve the application
+    // ---------------------------------------------------------
+
     const {
       error: approvalError,
     } = await supabaseAdmin
@@ -512,39 +498,41 @@ Deno.serve(async (req: Request) => {
       .update({
         status: "approved",
       })
-      .eq("id", application.id);
+      .eq("id", applicationId);
 
     if (approvalError) {
       console.error(
-        "Failed to approve application:",
+        "Driver account was created but application approval failed:",
         approvalError,
       );
 
-      /*
-       * The driver account exists at this point.
-       * We deliberately do not delete it here because
-       * the account and driver record were successfully
-       * created. The admin can retry the approval update.
-       */
-      throw approvalError;
+      return jsonResponse(
+        {
+          success: false,
+          error:
+            "Driver account was created successfully, but the application could not be marked as approved. Please retry the approval.",
+        },
+        500,
+      );
     }
 
-    // -----------------------------------------
-    // 18. Return account information
-    // -----------------------------------------
+    // ---------------------------------------------------------
+    // Success
+    // ---------------------------------------------------------
+
     return jsonResponse({
       success: true,
       alreadyExists: false,
       driverId,
-      userId: authUser.id,
-      email: authUser.email ?? driverEmail,
+      userId,
+      email,
       temporaryPassword,
       message:
         "Driver account created and application approved successfully.",
     });
   } catch (error) {
     console.error(
-      "Create driver account error:",
+      "Unexpected create-driver-account error:",
       error,
     );
 
@@ -554,7 +542,7 @@ Deno.serve(async (req: Request) => {
         error:
           error instanceof Error
             ? error.message
-            : "Unable to create driver account",
+            : "An unexpected error occurred.",
       },
       500,
     );
