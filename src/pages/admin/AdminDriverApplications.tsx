@@ -268,8 +268,33 @@ const AdminDriverApplications = () => {
       );
 
       if (accountError) {
+        let detailedError = accountError.message;
+
+        try {
+          const context = (accountError as any).context;
+
+          if (context instanceof Response) {
+            const errorBody = await context.clone().json();
+
+            if (errorBody?.error) {
+              detailedError = errorBody.error;
+            }
+          }
+        } catch (parseError) {
+          console.error(
+            "Could not parse Edge Function error response:",
+            parseError
+          );
+        }
+
+        console.error(
+          "create-driver-account failed:",
+          accountError,
+          detailedError
+        );
+
         throw new Error(
-          accountError.message ||
+          detailedError ||
             "Unable to create the driver account."
         );
       }
