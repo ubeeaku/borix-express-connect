@@ -68,7 +68,7 @@ serve(async (req) => {
     }
 
     // Send SMS via Termii
-    const termiiResponse = await fetch('https://v3.api.termii.com/api/sms/send', {
+    const termiiResponse = await fetch('https://v4.api.termii.com/api/sms/send', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({

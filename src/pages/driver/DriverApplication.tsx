@@ -99,15 +99,21 @@ useEffect(() => {
   const uploadFile = async (file: File, folder: string) => {
     const rawExt = (file.name.split(".").pop() || "").toLowerCase();
     const ext = /^[a-z0-9]{1,5}$/.test(rawExt) ? rawExt : "bin";
-    // Unique, unguessable per-file path under applications/<uuid>/ enforced by storage RLS
+
+    // Unique, unguessable path inside the private driver-documents bucket
     const path = `applications/${crypto.randomUUID()}/${folder}.${ext}`;
-    const { error } = await supabase.storage.from("driver-documents").upload(path, file, {
-      upsert: false,
-      contentType: file.type || undefined,
-    });
+
+    const { error } = await supabase.storage
+      .from("driver-documents")
+      .upload(path, file, {
+        upsert: false,
+        contentType: file.type || undefined,
+      });
+
     if (error) throw error;
-    const { data } = supabase.storage.from("driver-documents").getPublicUrl(path);
-    return data.publicUrl;
+
+    // Store the private storage path, not a public URL.
+    return path;
   };
 
   const validateStep = () => {

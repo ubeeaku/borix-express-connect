@@ -500,6 +500,59 @@ const AdminDriverApplications = () => {
     setDetailOpen(true);
   };
 
+  const openDocument = async (storedValue: string, label: string) => {
+    try {
+      let path = storedValue;
+
+      // Support documents uploaded by the old version of the app,
+      // which stored a full Supabase public URL instead of the path.
+      const marker = "/storage/v1/object/public/driver-documents/";
+
+      if (storedValue.includes(marker)) {
+        path = storedValue.split(marker)[1];
+      }
+
+      const { data, error } = await supabase.storage
+        .from("driver-documents")
+        .createSignedUrl(path, 300);
+
+      if (error) {
+        console.error(`Failed to open ${label}:`, error);
+
+        toast({
+          title: `Unable to open ${label}`,
+          description: error.message,
+          variant: "destructive",
+        });
+
+        return;
+      }
+
+      if (!data?.signedUrl) {
+        toast({
+          title: `Unable to open ${label}`,
+          description: "No signed URL was generated.",
+          variant: "destructive",
+        });
+
+        return;
+      }
+
+      window.open(data.signedUrl, "_blank", "noopener,noreferrer");
+    } catch (error) {
+      console.error(`Failed to open ${label}:`, error);
+
+      toast({
+        title: `Unable to open ${label}`,
+        description:
+          error instanceof Error
+            ? error.message
+            : "An unexpected error occurred.",
+        variant: "destructive",
+      });
+    }
+  };
+
   if (authLoading || !isAdmin) {
     return null;
   }
@@ -848,15 +901,14 @@ const AdminDriverApplications = () => {
                         className="flex items-center gap-2 p-2 bg-muted rounded-lg"
                       >
                         {url ? (
-                          <a
-                            href={url}
-                            target="_blank"
-                            rel="noopener noreferrer"
+                          <button
+                            type="button"
+                            onClick={() => openDocument(url, label)}
                             className="flex items-center gap-1 text-accent hover:underline"
                           >
                             <ExternalLink className="w-3 h-3" />
                             {label}
-                          </a>
+                          </button>
                         ) : (
                           <span className="text-muted-foreground">
                             ❌ {label}
