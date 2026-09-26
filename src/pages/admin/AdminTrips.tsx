@@ -32,7 +32,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { toast } from "@/hooks/use-toast";
 
 type Route = {
@@ -49,21 +54,32 @@ type Park = {
   status: string;
 };
 
+type DriverApplicationVehicle = {
+  vehicle_type: string | null;
+  vehicle_model: string | null;
+  vehicle_year: number | null;
+  vehicle_plate_number: string | null;
+  vehicle_color: string | null;
+  vehicle_capacity: number | null;
+};
+
 type Driver = {
   id: string;
   full_name: string;
   phone: string;
   park_id: string | null;
   status: string;
+  application_id: string | null;
+  applicationVehicle: DriverApplicationVehicle | null;
 };
 
-type Vehicle = {
-  id: string;
-  driver_id: string;
-  vehicle_type: string;
-  plate_number: string;
-  capacity: number;
-  status: string;
+type DepartureVehicle = {
+  vehicle_type: string | null;
+  vehicle_model: string | null;
+  vehicle_year: number | null;
+  vehicle_plate_number: string | null;
+  vehicle_color: string | null;
+  vehicle_capacity: number | null;
 };
 
 type Departure = {
@@ -71,6 +87,8 @@ type Departure = {
   travel_date: string;
   departure_time: string;
   total_seats: number;
+  occupied_seats: number;
+  vehicle_capacity: number;
   price: number;
   commission_amount: number;
   status: string;
@@ -78,7 +96,7 @@ type Departure = {
   route: Route | null;
   park: Park | null;
   driver: Driver | null;
-  vehicle: Vehicle | null;
+  vehicle: DepartureVehicle | null;
 
   bookedSeats: number;
 };
@@ -90,7 +108,6 @@ const AdminTrips = () => {
   const [routes, setRoutes] = useState<Route[]>([]);
   const [parks, setParks] = useState<Park[]>([]);
   const [drivers, setDrivers] = useState<Driver[]>([]);
-  const [vehicles, setVehicles] = useState<Vehicle[]>([]);
 
   const [selectedDate, setSelectedDate] = useState(
     format(new Date(), "yyyy-MM-dd")
@@ -104,38 +121,43 @@ const AdminTrips = () => {
     route_id: "",
     park_id: "",
     driver_id: "",
-    vehicle_id: "",
     travel_date: format(new Date(), "yyyy-MM-dd"),
     departure_time: "",
     price: "",
     commission_amount: "2000",
+    occupied_seats: "0",
   });
 
   const fetchBaseData = async () => {
-    const [routesResult, parksResult, driversResult, vehiclesResult] =
-      await Promise.all([
-        supabase
-          .from("routes")
-          .select("id, origin, destination, price")
-          .order("origin"),
+    const [
+      routesResult,
+      parksResult,
+      driversResult,
+      applicationsResult,
+    ] = await Promise.all([
+      supabase
+        .from("routes")
+        .select("id, origin, destination, price")
+        .order("origin"),
 
-        supabase
-          .from("parks")
-          .select("id, name, city, status")
-          .order("name"),
+      supabase
+        .from("parks")
+        .select("id, name, city, status")
+        .order("name"),
 
-        supabase
-          .from("drivers")
-          .select("id, full_name, phone, park_id, status")
-          .order("full_name"),
+      supabase
+        .from("drivers")
+        .select(
+          "id, full_name, phone, park_id, status, application_id"
+        )
+        .order("full_name"),
 
-        supabase
-          .from("vehicles")
-          .select(
-            "id, driver_id, vehicle_type, plate_number, capacity, status"
-          )
-          .order("plate_number"),
-      ]);
+      supabase
+        .from("driver_applications")
+        .select(
+          "id, vehicle_type, vehicle_model, vehicle_year, vehicle_plate_number, vehicle_color, vehicle_capacity"
+        ),
+    ]);
 
     if (routesResult.error) {
       console.error(routesResult.error);
@@ -166,20 +188,57 @@ const AdminTrips = () => {
         description: driversResult.error.message,
         variant: "destructive",
       });
-    } else {
-      setDrivers((driversResult.data ?? []) as Driver[]);
+      return;
     }
 
-    if (vehiclesResult.error) {
-      console.error(vehiclesResult.error);
+    if (applicationsResult.error) {
+      console.error(applicationsResult.error);
       toast({
-        title: "Failed to load vehicles",
-        description: vehiclesResult.error.message,
+        title: "Failed to load driver vehicles",
+        description: applicationsResult.error.message,
         variant: "destructive",
       });
-    } else {
-      setVehicles((vehiclesResult.data ?? []) as Vehicle[]);
+      return;
     }
+
+    const applicationsById = new Map<
+      string,
+      DriverApplicationVehicle
+    >();
+
+    (applicationsResult.data ?? []).forEach((application) => {
+      applicationsById.set(application.id, {
+        vehicle_type: application.vehicle_type ?? null,
+        vehicle_model: application.vehicle_model ?? null,
+        vehicle_year:
+          application.vehicle_year !== null
+            ? Number(application.vehicle_year)
+            : null,
+        vehicle_plate_number:
+          application.vehicle_plate_number ?? null,
+        vehicle_color: application.vehicle_color ?? null,
+        vehicle_capacity:
+          application.vehicle_capacity !== null
+            ? Number(application.vehicle_capacity)
+            : null,
+      });
+    });
+
+    const enrichedDrivers: Driver[] = (
+      driversResult.data ?? []
+    ).map((driver) => ({
+      id: driver.id,
+      full_name: driver.full_name,
+      phone: driver.phone,
+      park_id: driver.park_id ?? null,
+      status: driver.status,
+      application_id: driver.application_id ?? null,
+      applicationVehicle: driver.application_id
+        ? applicationsById.get(driver.application_id) ?? null
+        : null,
+    }));
+
+    setDrivers(enrichedDrivers);
   };
 
   const fetchDepartures = async () => {
@@ -193,6 +252,13 @@ const AdminTrips = () => {
           travel_date,
           departure_time,
           total_seats,
+          occupied_seats,
+          vehicle_type,
+          vehicle_model,
+          vehicle_year,
+          vehicle_plate_number,
+          vehicle_color,
+          vehicle_capacity,
           price,
           commission_amount,
           status,
@@ -213,15 +279,8 @@ const AdminTrips = () => {
             full_name,
             phone,
             park_id,
-            status
-          ),
-          vehicles (
-            id,
-            driver_id,
-            vehicle_type,
-            plate_number,
-            capacity,
-            status
+            status,
+            application_id
           )
         `)
         .eq("travel_date", selectedDate)
@@ -262,18 +321,31 @@ const AdminTrips = () => {
           travel_date: row.travel_date,
           departure_time: row.departure_time,
           total_seats: Number(row.total_seats),
+          occupied_seats: Number(row.occupied_seats ?? 0),
+          vehicle_capacity: Number(
+            row.vehicle_capacity ?? row.total_seats ?? 0
+          ),
           price: Number(row.price),
           commission_amount: Number(row.commission_amount ?? 0),
           status: row.status,
           route: row.routes ?? null,
           park: row.parks ?? null,
           driver: row.drivers ?? null,
-          vehicle: row.vehicles
-            ? {
-                ...row.vehicles,
-                capacity: Number(row.vehicles.capacity),
-              }
-            : null,
+          vehicle: {
+            vehicle_type: row.vehicle_type ?? null,
+            vehicle_model: row.vehicle_model ?? null,
+            vehicle_year:
+              row.vehicle_year !== null
+                ? Number(row.vehicle_year)
+                : null,
+            vehicle_plate_number:
+              row.vehicle_plate_number ?? null,
+            vehicle_color: row.vehicle_color ?? null,
+            vehicle_capacity:
+              row.vehicle_capacity !== null
+                ? Number(row.vehicle_capacity)
+                : null,
+          },
           bookedSeats: counts[row.id] ?? 0,
         }))
       );
@@ -283,7 +355,9 @@ const AdminTrips = () => {
       toast({
         title: "Failed to load trips",
         description:
-          error instanceof Error ? error.message : "Unable to load departures.",
+          error instanceof Error
+            ? error.message
+            : "Unable to load departures.",
         variant: "destructive",
       });
 
@@ -323,18 +397,22 @@ const AdminTrips = () => {
     );
   }, [activeDrivers, form.park_id]);
 
-  const availableVehicles = useMemo(() => {
-    if (!form.driver_id) return [];
+  const selectedDriver = useMemo(
+    () => drivers.find((driver) => driver.id === form.driver_id) ?? null,
+    [drivers, form.driver_id]
+  );
 
-    return vehicles.filter(
-      (vehicle) =>
-        vehicle.driver_id === form.driver_id &&
-        vehicle.status === "active"
-    );
-  }, [vehicles, form.driver_id]);
+  const registeredVehicle = selectedDriver?.applicationVehicle ?? null;
 
-  const selectedVehicle = vehicles.find(
-    (vehicle) => vehicle.id === form.vehicle_id
+  const vehicleCapacity = Number(
+    registeredVehicle?.vehicle_capacity ?? 0
+  );
+
+  const occupiedSeats = Number(form.occupied_seats || 0);
+
+  const availableSeats = Math.max(
+    vehicleCapacity - occupiedSeats,
+    0
   );
 
   const resetCreateForm = () => {
@@ -342,11 +420,11 @@ const AdminTrips = () => {
       route_id: "",
       park_id: "",
       driver_id: "",
-      vehicle_id: "",
       travel_date: selectedDate,
       departure_time: "",
       price: "",
       commission_amount: "2000",
+      occupied_seats: "0",
     });
   };
 
@@ -370,7 +448,7 @@ const AdminTrips = () => {
       ...previous,
       park_id: parkId,
       driver_id: "",
-      vehicle_id: "",
+      occupied_seats: "0",
     }));
   };
 
@@ -378,7 +456,7 @@ const AdminTrips = () => {
     setForm((previous) => ({
       ...previous,
       driver_id: driverId,
-      vehicle_id: "",
+      occupied_seats: "0",
     }));
   };
 
@@ -387,7 +465,6 @@ const AdminTrips = () => {
       !form.route_id ||
       !form.park_id ||
       !form.driver_id ||
-      !form.vehicle_id ||
       !form.travel_date ||
       !form.departure_time ||
       !form.price
@@ -395,23 +472,20 @@ const AdminTrips = () => {
       toast({
         title: "Complete all required fields",
         description:
-          "Route, park, driver, vehicle, date, time and price are required.",
+          "Route, park, driver, date, time and price are required.",
         variant: "destructive",
       });
       return;
     }
 
-    const vehicle = vehicles.find(
-      (item) => item.id === form.vehicle_id
-    );
-
     const driver = drivers.find(
       (item) => item.id === form.driver_id
     );
 
-    if (!vehicle || !driver) {
+    if (!driver) {
       toast({
-        title: "Invalid driver or vehicle",
+        title: "Invalid driver",
+        description: "The selected driver could not be found.",
         variant: "destructive",
       });
       return;
@@ -422,6 +496,73 @@ const AdminTrips = () => {
         title: "Park mismatch",
         description:
           "The selected driver is not assigned to the selected operating park.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const vehicle = driver.applicationVehicle;
+
+    if (!vehicle) {
+      toast({
+        title: "Vehicle information missing",
+        description:
+          "This driver does not have a registered vehicle in their approved application.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (
+      !vehicle.vehicle_type ||
+      !vehicle.vehicle_model ||
+      !vehicle.vehicle_plate_number ||
+      !vehicle.vehicle_capacity
+    ) {
+      toast({
+        title: "Incomplete vehicle information",
+        description:
+          "The driver's registered vehicle information is incomplete. Update the driver's application before creating a trip.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const capacity = Number(vehicle.vehicle_capacity);
+
+    if (!Number.isFinite(capacity) || capacity <= 0) {
+      toast({
+        title: "Invalid vehicle capacity",
+        description:
+          "The registered vehicle must have a valid passenger capacity.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const occupied = Number(form.occupied_seats || 0);
+
+    if (
+      !Number.isInteger(occupied) ||
+      occupied < 0 ||
+      occupied > capacity
+    ) {
+      toast({
+        title: "Invalid occupied seats",
+        description:
+          `Already occupied seats must be a whole number between 0 and ${capacity}.`,
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const remainingSeats = capacity - occupied;
+
+    if (remainingSeats <= 0) {
+      toast({
+        title: "No bookable seats remaining",
+        description:
+          "The trip cannot be created because all vehicle seats are already occupied.",
         variant: "destructive",
       });
       return;
@@ -455,10 +596,28 @@ const AdminTrips = () => {
         route_id: form.route_id,
         park_id: form.park_id,
         driver_id: form.driver_id,
-        vehicle_id: form.vehicle_id,
+
+        // New trips use the vehicle registered in the driver's
+        // approved application. No separate vehicles table is required.
+        vehicle_id: null,
+
+        vehicle_type: vehicle.vehicle_type,
+        vehicle_model: vehicle.vehicle_model,
+        vehicle_year: vehicle.vehicle_year,
+        vehicle_plate_number:
+          vehicle.vehicle_plate_number.toUpperCase(),
+        vehicle_color: vehicle.vehicle_color,
+        vehicle_capacity: capacity,
+
+        // Seats already occupied before Borix bookings.
+        occupied_seats: occupied,
+
+        // Only the remaining seats are made available for
+        // Borix passenger bookings.
+        total_seats: remainingSeats,
+
         travel_date: form.travel_date,
         departure_time: formatTimeForDisplay(form.departure_time),
-        total_seats: vehicle.capacity,
         price,
         commission_amount: commission,
         status: "scheduled",
@@ -468,7 +627,8 @@ const AdminTrips = () => {
 
       toast({
         title: "Departure created",
-        description: "The trip is now available as a real scheduled departure.",
+        description:
+          `${remainingSeats} seat${remainingSeats === 1 ? "" : "s"} available for Borix bookings.`,
       });
 
       setCreateOpen(false);
@@ -481,7 +641,9 @@ const AdminTrips = () => {
       toast({
         title: "Could not create departure",
         description:
-          error instanceof Error ? error.message : "Unable to create departure.",
+          error instanceof Error
+            ? error.message
+            : "Unable to create departure.",
         variant: "destructive",
       });
     } finally {
@@ -610,7 +772,9 @@ const AdminTrips = () => {
         <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
           <Card>
             <CardContent className="p-4">
-              <p className="text-sm text-muted-foreground">Available</p>
+              <p className="text-sm text-muted-foreground">
+                Available
+              </p>
               <p className="text-2xl font-bold text-green-600 mt-1">
                 {availableTrips.length}
               </p>
@@ -619,7 +783,9 @@ const AdminTrips = () => {
 
           <Card>
             <CardContent className="p-4">
-              <p className="text-sm text-muted-foreground">Boarding</p>
+              <p className="text-sm text-muted-foreground">
+                Boarding
+              </p>
               <p className="text-2xl font-bold text-yellow-600 mt-1">
                 {boardingTrips.length}
               </p>
@@ -637,7 +803,9 @@ const AdminTrips = () => {
 
           <Card>
             <CardContent className="p-4">
-              <p className="text-sm text-muted-foreground">Completed</p>
+              <p className="text-sm text-muted-foreground">
+                Completed
+              </p>
               <p className="text-2xl font-bold mt-1">
                 {completedTrips.length}
               </p>
@@ -646,7 +814,9 @@ const AdminTrips = () => {
 
           <Card>
             <CardContent className="p-4">
-              <p className="text-sm text-muted-foreground">Cancelled</p>
+              <p className="text-sm text-muted-foreground">
+                Cancelled
+              </p>
               <p className="text-2xl font-bold text-red-600 mt-1">
                 {cancelledTrips.length}
               </p>
@@ -726,7 +896,9 @@ const AdminTrips = () => {
                       <div className="flex items-center gap-2 text-sm">
                         <Calendar className="w-4 h-4 text-muted-foreground" />
                         {format(
-                          new Date(`${departure.travel_date}T00:00:00`),
+                          new Date(
+                            `${departure.travel_date}T00:00:00`
+                          ),
                           "PPP"
                         )}
                       </div>
@@ -762,21 +934,70 @@ const AdminTrips = () => {
                         <span className="font-medium">Vehicle:</span>
                         <span>
                           {departure.vehicle
-                            ? `${departure.vehicle.vehicle_type} — ${departure.vehicle.plate_number}`
+                            ? `${departure.vehicle.vehicle_type ?? ""} ${
+                                departure.vehicle.vehicle_model
+                                  ? `— ${departure.vehicle.vehicle_model}`
+                                  : ""
+                              } ${
+                                departure.vehicle.vehicle_plate_number
+                                  ? `— ${departure.vehicle.vehicle_plate_number}`
+                                  : ""
+                              }`
                             : "Not assigned"}
                         </span>
+                      </div>
+
+                      {departure.vehicle?.vehicle_color && (
+                        <div className="flex items-center gap-2 text-sm">
+                          <Car className="w-4 h-4 text-muted-foreground" />
+                          <span className="font-medium">Colour:</span>
+                          <span>
+                            {departure.vehicle.vehicle_color}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="rounded-lg border border-border p-3">
+                      <div className="grid grid-cols-3 gap-3 text-center">
+                        <div>
+                          <p className="text-xs text-muted-foreground">
+                            Vehicle Capacity
+                          </p>
+                          <p className="font-semibold mt-1">
+                            {departure.vehicle_capacity}
+                          </p>
+                        </div>
+
+                        <div>
+                          <p className="text-xs text-muted-foreground">
+                            Already Occupied
+                          </p>
+                          <p className="font-semibold mt-1">
+                            {departure.occupied_seats}
+                          </p>
+                        </div>
+
+                        <div>
+                          <p className="text-xs text-muted-foreground">
+                            Borix Seats
+                          </p>
+                          <p className="font-semibold mt-1">
+                            {departure.total_seats}
+                          </p>
+                        </div>
                       </div>
                     </div>
 
                     <div>
                       <div className="flex justify-between text-sm mb-2">
                         <span className="text-muted-foreground">
-                          Seats
+                          Borix Bookings
                         </span>
 
                         <span className="font-medium">
                           {departure.bookedSeats} booked /{" "}
-                          {departure.total_seats} total
+                          {departure.total_seats} available
                         </span>
                       </div>
 
@@ -791,7 +1012,8 @@ const AdminTrips = () => {
 
                       <p className="text-xs text-muted-foreground mt-2">
                         {seatsLeft} seat
-                        {seatsLeft === 1 ? "" : "s"} remaining
+                        {seatsLeft === 1 ? "" : "s"} remaining for
+                        Borix bookings
                       </p>
                     </div>
 
@@ -860,7 +1082,10 @@ const AdminTrips = () => {
                       </SelectItem>
                     ) : (
                       routes.map((route) => (
-                        <SelectItem key={route.id} value={route.id}>
+                        <SelectItem
+                          key={route.id}
+                          value={route.id}
+                        >
                           {route.origin} → {route.destination}
                         </SelectItem>
                       ))
@@ -888,7 +1113,10 @@ const AdminTrips = () => {
                       </SelectItem>
                     ) : (
                       activeParks.map((park) => (
-                        <SelectItem key={park.id} value={park.id}>
+                        <SelectItem
+                          key={park.id}
+                          value={park.id}
+                        >
                           {park.name} — {park.city}
                         </SelectItem>
                       ))
@@ -935,55 +1163,172 @@ const AdminTrips = () => {
                 </Select>
               </div>
 
-              {/* Vehicle */}
+              {/* Registered Vehicle */}
+              {form.driver_id && (
+                <div className="rounded-lg border border-border bg-muted/50 p-4 space-y-3">
+                  <div className="flex items-center gap-2">
+                    <Car className="w-5 h-5 text-accent" />
+
+                    <div>
+                      <p className="font-semibold">
+                        Registered Vehicle
+                      </p>
+
+                      <p className="text-xs text-muted-foreground">
+                        Automatically taken from the driver's approved
+                        application
+                      </p>
+                    </div>
+                  </div>
+
+                  {!registeredVehicle ? (
+                    <p className="text-sm text-destructive">
+                      This driver has no registered vehicle information.
+                    </p>
+                  ) : (
+                    <div className="grid grid-cols-2 gap-3 text-sm">
+                      <div>
+                        <p className="text-xs text-muted-foreground">
+                          Type
+                        </p>
+                        <p className="font-medium">
+                          {registeredVehicle.vehicle_type ||
+                            "Not provided"}
+                        </p>
+                      </div>
+
+                      <div>
+                        <p className="text-xs text-muted-foreground">
+                          Model
+                        </p>
+                        <p className="font-medium">
+                          {registeredVehicle.vehicle_model ||
+                            "Not provided"}
+                        </p>
+                      </div>
+
+                      <div>
+                        <p className="text-xs text-muted-foreground">
+                          Year
+                        </p>
+                        <p className="font-medium">
+                          {registeredVehicle.vehicle_year ||
+                            "Not provided"}
+                        </p>
+                      </div>
+
+                      <div>
+                        <p className="text-xs text-muted-foreground">
+                          Plate Number
+                        </p>
+                        <p className="font-medium uppercase">
+                          {registeredVehicle.vehicle_plate_number ||
+                            "Not provided"}
+                        </p>
+                      </div>
+
+                      <div>
+                        <p className="text-xs text-muted-foreground">
+                          Colour
+                        </p>
+                        <p className="font-medium">
+                          {registeredVehicle.vehicle_color ||
+                            "Not provided"}
+                        </p>
+                      </div>
+
+                      <div>
+                        <p className="text-xs text-muted-foreground">
+                          Passenger Capacity
+                        </p>
+                        <p className="font-medium">
+                          {vehicleCapacity > 0
+                            ? `${vehicleCapacity} seats`
+                            : "Not provided"}
+                        </p>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Already Occupied Seats */}
               <div>
-                <Label>Vehicle *</Label>
+                <Label>Seats Already Occupied *</Label>
 
-                <Select
-                  value={form.vehicle_id}
-                  onValueChange={(value) =>
-                    setForm((previous) => ({
-                      ...previous,
-                      vehicle_id: value,
-                    }))
-                  }
-                  disabled={!form.driver_id}
-                >
-                  <SelectTrigger className="mt-1">
-                    <SelectValue
-                      placeholder={
-                        form.driver_id
-                          ? "Select vehicle"
-                          : "Select a driver first"
-                      }
-                    />
-                  </SelectTrigger>
+                <Input
+                  type="number"
+                  min="0"
+                  max={vehicleCapacity > 0 ? vehicleCapacity : undefined}
+                  step="1"
+                  value={form.occupied_seats}
+                  disabled={!form.driver_id || vehicleCapacity <= 0}
+                  onChange={(e) => {
+                    const value = e.target.value;
 
-                  <SelectContent>
-                    {availableVehicles.length === 0 ? (
-                      <SelectItem value="no-vehicles" disabled>
-                        No active vehicles for this driver
-                      </SelectItem>
-                    ) : (
-                      availableVehicles.map((vehicle) => (
-                        <SelectItem
-                          key={vehicle.id}
-                          value={vehicle.id}
-                        >
-                          {vehicle.vehicle_type} —{" "}
-                          {vehicle.plate_number} (
-                          {vehicle.capacity} seats)
-                        </SelectItem>
-                      ))
-                    )}
-                  </SelectContent>
-                </Select>
+                    if (value === "") {
+                      setForm((previous) => ({
+                        ...previous,
+                        occupied_seats: "",
+                      }));
+                      return;
+                    }
 
-                {selectedVehicle && (
-                  <p className="text-xs text-muted-foreground mt-1">
-                    Total seats: {selectedVehicle.capacity}
-                  </p>
+                    const numberValue = Number(value);
+
+                    if (
+                      Number.isInteger(numberValue) &&
+                      numberValue >= 0 &&
+                      numberValue <= vehicleCapacity
+                    ) {
+                      setForm((previous) => ({
+                        ...previous,
+                        occupied_seats: value,
+                      }));
+                    }
+                  }}
+                  className="mt-1"
+                  placeholder="0"
+                />
+
+                {vehicleCapacity > 0 && (
+                  <div className="mt-2 rounded-lg bg-muted p-3">
+                    <div className="flex justify-between text-sm">
+                      <span className="text-muted-foreground">
+                        Vehicle capacity
+                      </span>
+
+                      <span className="font-medium">
+                        {vehicleCapacity}
+                      </span>
+                    </div>
+
+                    <div className="flex justify-between text-sm mt-1">
+                      <span className="text-muted-foreground">
+                        Already occupied
+                      </span>
+
+                      <span className="font-medium">
+                        {occupiedSeats}
+                      </span>
+                    </div>
+
+                    <div className="flex justify-between text-sm mt-1 pt-1 border-t">
+                      <span className="font-medium">
+                        Available for Borix
+                      </span>
+
+                      <span className="font-bold text-accent">
+                        {availableSeats}
+                      </span>
+                    </div>
+                  </div>
                 )}
+
+                <p className="text-xs text-muted-foreground mt-1">
+                  Enter the number of passengers or seats that are
+                  already occupied before Borix bookings.
+                </p>
               </div>
 
               {/* Date */}
@@ -1061,10 +1406,21 @@ const AdminTrips = () => {
               </div>
 
               {/* Information */}
-              <div className="rounded-lg bg-muted p-3 text-sm text-muted-foreground">
-                This will create a real scheduled departure in the
-                database. Passengers will only see departures that
-                actually exist here.
+              <div className="rounded-lg bg-muted p-3 text-sm text-muted-foreground space-y-1">
+                <p>
+                  This will create a real scheduled departure in the
+                  database.
+                </p>
+
+                <p>
+                  The driver's registered vehicle will automatically
+                  be attached to the trip.
+                </p>
+
+                <p>
+                  Seats already occupied are excluded from Borix
+                  passenger bookings.
+                </p>
               </div>
 
               {/* Buttons */}
@@ -1080,7 +1436,12 @@ const AdminTrips = () => {
 
                 <Button
                   onClick={handleCreateDeparture}
-                  disabled={saving}
+                  disabled={
+                    saving ||
+                    !registeredVehicle ||
+                    vehicleCapacity <= 0 ||
+                    availableSeats <= 0
+                  }
                 >
                   {saving ? (
                     <>
@@ -1118,4 +1479,3 @@ function formatTimeForDisplay(time: string) {
 }
 
 export default AdminTrips;
-

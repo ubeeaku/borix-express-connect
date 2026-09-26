@@ -57,7 +57,9 @@ export default async function handler(
       {
         hasPaystackSecret: Boolean(PAYSTACK_SECRET_KEY),
         hasSupabaseUrl: Boolean(SUPABASE_URL),
-        hasServiceRole: Boolean(SUPABASE_SERVICE_ROLE_KEY),
+        hasServiceRole: Boolean(
+          SUPABASE_SERVICE_ROLE_KEY
+        ),
       }
     );
 
@@ -77,12 +79,9 @@ export default async function handler(
     method: req.method,
     contentType: req.headers['content-type'],
     bodyType: typeof body,
-    body: body,
+    body,
   });
 
-  // Vercel normally parses JSON automatically.
-  // This fallback also handles cases where body arrives
-  // as a JSON string.
   if (typeof body === 'string') {
     try {
       body = JSON.parse(body);
@@ -238,10 +237,17 @@ export default async function handler(
         route_id,
         park_id,
         driver_id,
-        vehicle_id,
         travel_date,
         departure_time,
-        price
+        price,
+        vehicle_type,
+        vehicle_model,
+        vehicle_year,
+        vehicle_plate_number,
+        vehicle_color,
+        vehicle_capacity,
+        occupied_seats,
+        total_seats
       `)
       .eq('id', booking.departure_id)
       .maybeSingle();
@@ -318,35 +324,39 @@ export default async function handler(
   }
 
   // --------------------------------------------------
-  // Load vehicle information
+  // Vehicle information
+  //
+  // Vehicle is now stored directly on the departure
+  // as a snapshot from the driver's application.
   // --------------------------------------------------
 
-  let vehicleData: any = null;
+  const vehicleData = departureData
+    ? {
+        vehicle_type:
+          departureData.vehicle_type ?? null,
 
-  if (departureData?.vehicle_id) {
-    const {
-      data,
-      error: vehicleError,
-    } = await supabase
-      .from('vehicles')
-      .select(`
-        id,
-        vehicle_type,
-        plate_number,
-        capacity
-      `)
-      .eq('id', departureData.vehicle_id)
-      .maybeSingle();
+        vehicle_model:
+          departureData.vehicle_model ?? null,
 
-    if (vehicleError) {
-      console.error(
-        '[paystack/verify] Vehicle lookup error:',
-        vehicleError
-      );
-    } else {
-      vehicleData = data;
-    }
-  }
+        vehicle_year:
+          departureData.vehicle_year ?? null,
+
+        plate_number:
+          departureData.vehicle_plate_number ?? null,
+
+        color:
+          departureData.vehicle_color ?? null,
+
+        capacity:
+          departureData.vehicle_capacity ?? null,
+
+        occupied_seats:
+          departureData.occupied_seats ?? 0,
+
+        total_seats:
+          departureData.total_seats ?? null,
+      }
+    : null;
 
   // --------------------------------------------------
   // Verify transaction with Paystack
@@ -368,7 +378,8 @@ export default async function handler(
     const psRes = await fetch(paystackUrl, {
       method: 'GET',
       headers: {
-        Authorization: `Bearer ${PAYSTACK_SECRET_KEY}`,
+        Authorization:
+          `Bearer ${PAYSTACK_SECRET_KEY}`,
         'Content-Type': 'application/json',
       },
     });
@@ -394,7 +405,8 @@ export default async function handler(
 
       return json(req, res, 502, {
         success: false,
-        error: 'Invalid response from payment provider',
+        error:
+          'Invalid response from payment provider',
       });
     }
   } catch (error) {
@@ -405,7 +417,8 @@ export default async function handler(
 
     return json(req, res, 502, {
       success: false,
-      error: 'Unable to reach payment provider',
+      error:
+        'Unable to reach payment provider',
     });
   }
 
@@ -453,7 +466,9 @@ export default async function handler(
   // --------------------------------------------------
 
   const expectedAmountKobo =
-    Math.round(Number(booking.total_amount) * 100);
+    Math.round(
+      Number(booking.total_amount) * 100
+    );
 
   const paidAmountKobo =
     Number(transaction.amount);
@@ -542,6 +557,32 @@ export default async function handler(
   }
 
   // --------------------------------------------------
+  // Release reserved seats for failed/abandoned
+  // payments.
+  // --------------------------------------------------
+
+  if (paymentStatus === 'failed') {
+    const { error: seatReleaseError } =
+      await supabase
+        .from('booked_seats')
+        .delete()
+        .eq('booking_id', booking.id);
+
+    if (seatReleaseError) {
+      console.error(
+        '[paystack/verify] Failed to release reserved seats:',
+        seatReleaseError
+      );
+
+      return json(req, res, 500, {
+        success: false,
+        error:
+          'Payment failed, but reserved seats could not be released',
+      });
+    }
+  }
+
+  // --------------------------------------------------
   // Update booking
   // --------------------------------------------------
 
@@ -598,11 +639,13 @@ export default async function handler(
     {
       reference,
       paymentStatus,
-      transactionStatus: transaction.status,
+      transactionStatus:
+        transaction.status,
       seats: seatNumbers,
       park: parkData?.name ?? null,
       driver: driverData?.full_name ?? null,
-      vehicle: vehicleData?.vehicle_type ?? null,
+      vehicle:
+        vehicleData?.vehicle_type ?? null,
     }
   );
 
@@ -666,29 +709,54 @@ export default async function handler(
       driver: driverData
         ? {
             id: driverData.id,
-            full_name: driverData.full_name,
+            full_name:
+              driverData.full_name,
             phone: driverData.phone,
           }
         : null,
 
       vehicle: vehicleData
         ? {
-            id: vehicleData.id,
             vehicle_type:
               vehicleData.vehicle_type,
+
+            vehicle_model:
+              vehicleData.vehicle_model,
+
+            vehicle_year:
+              vehicleData.vehicle_year,
+
             plate_number:
               vehicleData.plate_number,
+
+            color:
+              vehicleData.color,
+
             capacity:
               vehicleData.capacity,
+
+            occupied_seats:
+              vehicleData.occupied_seats,
+
+            total_seats:
+              vehicleData.total_seats,
           }
         : null,
     },
 
     transaction: {
-      reference: transaction.reference,
-      status: transaction.status,
-      amount: transaction.amount,
-      currency: transaction.currency,
+      reference:
+        transaction.reference,
+
+      status:
+        transaction.status,
+
+      amount:
+        transaction.amount,
+
+      currency:
+        transaction.currency,
+
       paid_at:
         transaction.paid_at ?? null,
     },

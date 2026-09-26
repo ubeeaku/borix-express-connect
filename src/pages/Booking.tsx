@@ -65,9 +65,21 @@ const Booking = () => {
 
   useEffect(() => { setSelectedSeats([]); }, [selectedDeparture?.id, formData.passengers]);
 
-  const totalPrice = selectedDeparture ? selectedDeparture.price * parseInt(formData.passengers || "1") : 0;
+  const passengerCount = parseInt(formData.passengers || "1");
+
+  const totalPrice = selectedDeparture
+    ? selectedDeparture.price * passengerCount
+    : 0;
+
   const capacity = selectedDeparture?.vehicle?.capacity ?? 7;
-  const seatsLeft = selectedDeparture ? capacity - selectedDeparture.seatsBooked : 0;
+
+  const borixCapacity =
+    selectedDeparture?.total_seats ??
+    Math.max(capacity - (selectedDeparture?.occupied_seats ?? 0), 0);
+
+  const seatsLeft = selectedDeparture
+    ? Math.max(borixCapacity - selectedDeparture.seatsBooked, 0)
+    : 0;
 
   const handleInputChange = (field: string, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
@@ -257,9 +269,10 @@ const Booking = () => {
                     <h2 className="text-xl font-bold text-foreground">Choose your seats</h2>
                     <VehicleSeatPicker
                       departureId={selectedDeparture.id}
-                      vehicleType={selectedDeparture.vehicle?.vehicle_type ?? 'sienna'}
+                      vehicleType={selectedDeparture.vehicle?.vehicle_type ?? "sienna"}
                       capacity={capacity}
-                      passengers={parseInt(formData.passengers)}
+                      occupiedSeats={selectedDeparture.occupied_seats ?? 0}
+                      passengers={passengerCount}
                       selectedSeats={selectedSeats}
                       onSeatsChange={setSelectedSeats}
                     />

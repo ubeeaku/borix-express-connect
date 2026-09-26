@@ -20,6 +20,7 @@ interface PublicDepartureRow {
   price: number;
   commission_amount: number;
   total_seats: number;
+  occupied_seats: number;
   status: string;
 
   driver_id: string | null;
@@ -60,7 +61,8 @@ export const DeparturesList = ({
         // allowing public users to read the private drivers table.
         // Use an any-cast because `public_departures` is a view not present
         // in the generated DB types used by the Supabase client.
-        const { data, error } = await (supabase as any).from("public_departures")
+        const { data, error } = await (supabase as any)
+          .from("public_departures")
           .select("*")
           .eq("origin", origin)
           .eq("destination", destination)
@@ -122,7 +124,16 @@ export const DeparturesList = ({
             travel_date: departure.travel_date,
             departure_time: departure.departure_time,
             price: Number(departure.price),
+
+            // total_seats is now the number of seats
+            // available for Borix passengers.
             total_seats: Number(departure.total_seats),
+
+            // Seats already occupied before Borix bookings.
+            occupied_seats: Number(
+              departure.occupied_seats ?? 0
+            ),
+
             status: departure.status,
 
             driver: departure.driver_id
