@@ -171,11 +171,12 @@ const AdminDriverApplications = () => {
     fetchParks();
   }, [isAdmin]);
 
+  
   const sendDriverSMS = async (
     phone: string,
     message: string,
     type: string
-  ) => {
+  ): Promise<boolean> => {
     try {
       const {
         data: { session },
@@ -183,27 +184,79 @@ const AdminDriverApplications = () => {
 
       if (!session?.access_token) {
         console.error("No active admin session for SMS");
-        return;
+        return false;
       }
 
-      const { error } = await supabase.functions.invoke(
+      const { data, error } = await supabase.functions.invoke(
         "send-driver-sms",
         {
+          body: { phone, message, type },
+        }
+      );
+
+      if (error || data?.success === false) {
+        console.error(
+          "SMS notification failed:",
+          error || data?.error
+        );
+        return false;
+      }
+
+      return true;
+    } catch (error) {
+      console.error("SMS notification failed:", error);
+      return false;
+    }
+  };
+
+  const sendDriverEmail = async ({
+    email,
+    fullName,
+    temporaryPassword,
+    accountAlreadyExists,
+  }: {
+    email: string;
+    fullName: string;
+    temporaryPassword?: string;
+    accountAlreadyExists: boolean;
+  }): Promise<boolean> => {
+    try {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+
+      if (!session?.access_token) {
+        console.error("No active admin session for email");
+        return false;
+      }
+
+      const { data, error } = await supabase.functions.invoke(
+        "send-driver-email",
+        {
           body: {
-            phone,
-            message,
-            type,
+            email,
+            fullName,
+            temporaryPassword,
+            accountAlreadyExists,
           },
         }
       );
 
-      if (error) {
-        console.error("SMS notification failed:", error);
+      if (error || data?.success !== true) {
+        console.error(
+          "Driver approval email failed:",
+          error || data?.error
+        );
+        return false;
       }
+
+      return true;
     } catch (error) {
-      console.error("SMS notification failed:", error);
+      console.error("Driver approval email failed:", error);
+      return false;
     }
   };
+
 
   const updateStatus = async (
   id: string,
@@ -380,23 +433,51 @@ const AdminDriverApplications = () => {
           `Please change your password after your first login.`;
       }
 
+      
       /*
-       * Send the login information to the driver.
+       * Send email and SMS independently.
+       * Notification failures must not undo approval.
        */
-      if (app.phone) {
-        await sendDriverSMS(
-          app.phone,
-          smsMessage,
-          "application_approved"
+      const emailSent = driverEmail
+        ? await sendDriverEmail({
+            email: driverEmail,
+            fullName: app.full_name,
+            temporaryPassword: accountAlreadyExists
+              ? undefined
+              : temporaryPassword,
+            accountAlreadyExists,
+          })
+        : false;
+
+      if (!driverEmail) {
+        console.error(
+          "Driver approval email skipped: no login email is available."
         );
       }
 
+      const smsSent = app.phone
+        ? await sendDriverSMS(
+            app.phone,
+            smsMessage,
+            "application_approved"
+          )
+        : false;
+
+      const notificationResults = [
+        `Email: ${emailSent ? "sent" : "failed"}`,
+        `SMS: ${smsSent ? "sent" : "failed"}`,
+      ].join(" | ");
+
       toast({
         title: "Driver approved successfully",
-        description: accountAlreadyExists
-          ? `${app.full_name}'s application has been approved. Their existing driver account can be used to log in.`
-          : `${app.full_name} has been approved, their driver account has been created, and the login credentials were sent by SMS.`,
+        description:
+          `${app.full_name}'s driver application has been approved. ` +
+          notificationResults +
+          ". Check the function logs for any notification failures.",
+        variant:
+          emailSent && smsSent ? "default" : "destructive",
       });
+
     } else {
       /*
        * Rejection / suspension / pending updates.

@@ -424,7 +424,6 @@ const DriverApplication = () => {
             parseInt(form.years_experience, 10) || 0,
 
           // Vehicle information
-          vehicle_details: null,
           vehicle_type: form.vehicle_type,
           vehicle_model: form.vehicle_model.trim(),
           vehicle_year: Number(form.vehicle_year),
