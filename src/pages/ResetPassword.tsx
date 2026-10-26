@@ -21,6 +21,7 @@ const schema = z
 
 const ResetPassword = () => {
   const navigate = useNavigate();
+  const isDriverFlow = new URLSearchParams(window.location.search).get("next") === "/driver/login";
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -88,7 +89,7 @@ const ResetPassword = () => {
       if (error) throw new Error(error.message);
       toast({ title: "Password updated", description: "You can now sign in." });
       await supabase.auth.signOut();
-      navigate("/admin/login");
+      navigate(isDriverFlow ? "/driver/login" : "/admin/login");
     } catch (error) {
       const message =
         error instanceof z.ZodError
@@ -128,7 +129,10 @@ const ResetPassword = () => {
                 : "Verifying your reset link…"}
             </p>
             {linkError && (
-              <a href="/admin/forgot-password" className="text-accent hover:underline text-sm">
+              <a
+                href={isDriverFlow ? "/driver/forgot-password" : "/admin/forgot-password"}
+                className="text-accent hover:underline text-sm"
+              >
                 Request a new reset link
               </a>
             )}
