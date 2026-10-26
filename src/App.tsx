@@ -33,6 +33,7 @@ import DriverApplication from "./pages/driver/DriverApplication";
 import Partnership from "./pages/driver/Partnership";
 import Safety from "./pages/driver/Safety";
 import DriverLogin from "./pages/driver/DriverLogin";
+import DriverForgotPassword from "./pages/driver/DriverForgotPassword";
 import DriverDashboard from "./pages/driver/DriverDashboard";
 
 const queryClient = new QueryClient();
@@ -59,6 +60,7 @@ const App = () => (
           <Route path="/driver/partnership" element={<Partnership />} />
           <Route path="/driver/safety" element={<Safety />} />
           <Route path="/driver/login" element={<DriverLogin />} />
+          <Route path="/driver/forgot-password" element={<DriverForgotPassword />} />
           <Route path="/driver/dashboard" element={<DriverDashboard />} />
           <Route path="/admin" element={<AdminLogin />} />
           <Route path="/admin/login" element={<AdminLogin />} />

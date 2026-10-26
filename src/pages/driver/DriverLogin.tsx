@@ -122,6 +122,11 @@ if (roleError || !roleData) {
                   autoComplete="current-password"
                 />
               </div>
+              <div className="mt-2 text-right">
+                <a href="/driver/forgot-password" className="text-sm text-accent hover:underline">
+                  Forgot password?
+                </a>
+              </div>
             </div>
 
             <Button variant="hero" size="lg" type="submit" className="w-full" disabled={isLoading}>
