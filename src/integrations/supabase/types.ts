@@ -247,7 +247,13 @@ export type Database = {
           status: Database["public"]["Enums"]["driver_application_status"]
           updated_at: string
           vehicle_details: string | null
-          vehicle_ownership: Database["public"]["Enums"]["vehicle_ownership_type"]
+          vehicle_type: string | null
+          vehicle_model: string | null
+          vehicle_year: number | null
+          vehicle_plate_number: string | null
+          vehicle_color: string | null
+          vehicle_capacity: number | null
+          vehicle_ownership: Database["public"]["Enums"]["vehicle_ownership_type"] | null
           vehicle_papers_url: string | null
           years_experience: number
         }
@@ -276,7 +282,13 @@ export type Database = {
           status?: Database["public"]["Enums"]["driver_application_status"]
           updated_at?: string
           vehicle_details?: string | null
-          vehicle_ownership: Database["public"]["Enums"]["vehicle_ownership_type"]
+          vehicle_type?: string | null
+          vehicle_model?: string | null
+          vehicle_year?: number | null
+          vehicle_plate_number?: string | null
+          vehicle_color?: string | null
+          vehicle_capacity?: number | null
+          vehicle_ownership?: Database["public"]["Enums"]["vehicle_ownership_type"] | null
           vehicle_papers_url?: string | null
           years_experience?: number
         }
@@ -305,7 +317,13 @@ export type Database = {
           status?: Database["public"]["Enums"]["driver_application_status"]
           updated_at?: string
           vehicle_details?: string | null
-          vehicle_ownership?: Database["public"]["Enums"]["vehicle_ownership_type"]
+          vehicle_type?: string | null
+          vehicle_model?: string | null
+          vehicle_year?: number | null
+          vehicle_plate_number?: string | null
+          vehicle_color?: string | null
+          vehicle_capacity?: number | null
+          vehicle_ownership?: Database["public"]["Enums"]["vehicle_ownership_type"] | null
           vehicle_papers_url?: string | null
           years_experience?: number
         }
