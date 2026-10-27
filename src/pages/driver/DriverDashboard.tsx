@@ -67,13 +67,20 @@ const DriverDashboard = () => {
       return;
     }
 
-    // Check driver role
-    const { data: hasRole } = await supabase.rpc('has_role', {
-      _user_id: session.user.id,
-      _role: 'driver',
-    });
+    // Check the driver's own role directly. The public has_role RPC is
+    // restricted to service_role in production, while users can read their
+    // own user_roles row under RLS.
+    const { data: driverRole, error: roleError } = await supabase
+      .from('user_roles')
+      .select('id')
+      .eq('user_id', session.user.id)
+      .eq('role', 'driver')
+      .maybeSingle();
 
-    if (!hasRole) {
+    if (roleError || !driverRole) {
+      if (roleError) {
+        console.error('Failed to verify driver role:', roleError);
+      }
       navigate("/driver/login");
       return;
     }
