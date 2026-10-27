@@ -367,6 +367,24 @@ export async function prepareDeparture(
     };
   }
 
+  const departureDate = String(departure.travel_date).slice(0, 10);
+  const departureTime = String(departure.departure_time).slice(0, 8);
+  const departureTimestamp = Date.parse(
+    `${departureDate}T${departureTime}+01:00`
+  );
+
+  if (
+    !Number.isFinite(departureTimestamp) ||
+    departureTimestamp <= Date.now()
+  ) {
+    return {
+      error: {
+        status: 400,
+        message: 'This departure has already passed',
+      },
+    };
+  }
+
   const capacity = Number(
     departure.vehicle_capacity ??
       departure.total_seats ??

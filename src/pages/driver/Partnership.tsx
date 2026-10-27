@@ -6,10 +6,10 @@ import { Footer } from "@/components/layout/Footer";
 import { Button } from "@/components/ui/button";
 
 const commissionDetails = [
-  { label: "Per-trip earnings", value: "Competitive rate per completed trip" },
-  { label: "Payment frequency", value: "Weekly bank transfers" },
-  { label: "Bonus trips", value: "Extra pay for peak-hour and holiday trips" },
-  { label: "Fuel support", value: "Fuel allowance included for partnership vehicles" },
+  { label: "Trip earnings", value: "Rates are reviewed and agreed during onboarding." },
+  { label: "Payment terms", value: "Payment timing and method are confirmed in the driver agreement." },
+  { label: "Trip assignments", value: "Available assignments depend on the operating schedule and vehicle capacity." },
+  { label: "Vehicle arrangements", value: "Vehicle availability and responsibilities are agreed before a partnership begins." },
 ];
 
 const responsibilities = [
@@ -22,11 +22,9 @@ const responsibilities = [
 ];
 
 const vehicleCare = [
-  "Regular servicing at approved mechanic centres",
-  "Weekly vehicle inspection checks",
+  "Keep the assigned vehicle clean and report maintenance concerns promptly.",
   "Immediate reporting of mechanical faults",
   "No unauthorized modifications to the vehicle",
-  "Borix Express covers major maintenance for partnership vehicles",
 ];
 
 const codeOfConduct = [
@@ -55,7 +53,7 @@ const Partnership = () => {
               Partner With <span className="text-accent">Borix Express</span>
             </h1>
             <p className="text-white/80 text-lg md:text-xl max-w-2xl mx-auto">
-              Don't have a vehicle? No problem. Join our partnership programme and drive a Borix Express vehicle while earning great pay.
+              If you do not have a vehicle, ask about the partnership options available during driver onboarding.
             </p>
           </motion.div>
         </div>
@@ -143,7 +141,7 @@ const Partnership = () => {
           <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}>
             <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">Ready to Partner?</h2>
             <p className="text-white/80 text-lg mb-8 max-w-xl mx-auto">
-              Apply today and start earning as a Borix Express partner driver.
+              Submit an application and discuss available partnership terms with the team.
             </p>
             <Link to="/driver/apply">
               <Button className="btn-hero text-lg px-10 py-6">

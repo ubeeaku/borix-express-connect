@@ -20,15 +20,15 @@ const contactInfo = [
   {
     icon: MessageCircle,
     title: "WhatsApp",
-    value: "Chat with us",
-    description: "Quick responses",
+    value: "Message us",
+    description: "Open a WhatsApp chat",
     action: "https://wa.me/2349036573414",
   },
   {
     icon: Mail,
     title: "Email",
     value: "borixexpressltd@gmail.com",
-    description: "We reply within 24 hours",
+    description: "Send us an email",
     action: "mailto:borixexpressltd@gmail.com",
   },
   {
@@ -40,6 +40,9 @@ const contactInfo = [
   },
 ];
 
+const officeAddress = "No. 47 Cornerstone Kabong, Off Rukuba Road, Jos, Nigeria";
+const officeMapsQuery = encodeURIComponent(officeAddress);
+
 const Contact = () => {
   const [formData, setFormData] = useState({
     name: "",
@@ -50,11 +53,18 @@ const Contact = () => {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    const body = [
+      `Name: ${formData.name}`,
+      `Phone: ${formData.phone}`,
+      `Email: ${formData.email}`,
+      "",
+      formData.message,
+    ].join("\n");
+    window.location.href = `mailto:borixexpressltd@gmail.com?subject=${encodeURIComponent("Borix Express website enquiry")}&body=${encodeURIComponent(body)}`;
     toast({
-      title: "Message Sent! ✉️",
-      description: "We'll get back to you as soon as possible.",
+      title: "Continue in your email app",
+      description: "Your message is prepared there. Send the email to complete delivery.",
     });
-    setFormData({ name: "", email: "", phone: "", message: "" });
   };
 
   return (
@@ -134,7 +144,7 @@ const Contact = () => {
                 Send Us a Message
               </h2>
               <p className="text-muted-foreground mb-8">
-                Fill out the form below and we'll get back to you shortly.
+                Submit to open a prepared email. Your message is sent only after you send it from your email app.
               </p>
 
               <form onSubmit={handleSubmit} className="space-y-6">
@@ -212,7 +222,7 @@ const Contact = () => {
 
               <div className="bg-card rounded-2xl overflow-hidden shadow-lg h-[400px]">
                 <iframe
-                  src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3930.2234!2d8.8891!3d9.8965!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x105373b8b9d3e8c5%3A0x8b8b8b8b8b8b8b8b!2s47%20Cornerstone%20Kabong%2C%20Off%20Rukuba%20Road%2C%20Jos!5e0!3m2!1sen!2sng!4v1700000000000!5m2!1sen!2sng"
+                  src={`https://www.google.com/maps?q=${officeMapsQuery}&output=embed`}
                   width="100%"
                   height="100%"
                   style={{ border: 0 }}
@@ -223,12 +233,21 @@ const Contact = () => {
                 />
               </div>
 
+              <a
+                href={`https://www.google.com/maps/search/?api=1&query=${officeMapsQuery}`}
+                target="_blank"
+                rel="noreferrer"
+                className="inline-block mt-3 text-sm font-semibold text-accent underline underline-offset-4"
+              >
+                Open this address in Google Maps
+              </a>
+
               <div className="mt-6 flex items-start gap-3 p-4 bg-card rounded-xl">
                 <MapPin className="w-5 h-5 text-accent mt-1" />
                 <div>
                   <p className="font-semibold text-foreground">Head Office</p>
                   <p className="text-muted-foreground">
-                    No.47 cornerstone Kabong, Off Rukuba Road, Jos Nigeria
+                    {officeAddress}
                   </p>
                 </div>
               </div>
