@@ -1,6 +1,6 @@
 import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
-import { ArrowRight, Shield, Clock, Star, Users, MapPin, TrendingUp, Tag } from "lucide-react";
+import { ArrowRight, Shield, Clock, Star, MapPin, Tag } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import heroBus from "@/assets/hero-bus.jpg.asset.json";
 import { useMinRoutePrice } from "@/hooks/useMinRoutePrice";
@@ -42,7 +42,7 @@ export const Hero = () => {
             >
               <Star className="w-4 h-4 text-accent" />
               <span className="text-white/90 text-sm font-medium">
-                Nigeria's #1 Intercity Transport
+                Jos ↔ Abuja intercity service
               </span>
             </motion.div>
 
@@ -102,12 +102,10 @@ export const Hero = () => {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.6 }}
-              className="grid grid-cols-3 gap-2 mt-12 pt-8 border-t border-white/10 divide-x divide-white/10"
+              className="grid grid-cols-1 max-w-xs gap-2 mt-12 pt-8 border-t border-white/10"
             >
               {[
-                { icon: Users, value: "50K+", label: "Happy Customers" },
-                { icon: MapPin, value: "2", label: "Routes" },
-                { icon: TrendingUp, value: "99%", label: "On-time Rate" },
+                { icon: MapPin, value: "2", label: "Travel directions" },
               ].map((stat, index) => (
                 <div key={index} className="px-2 text-center lg:text-left first:pl-0">
                   <stat.icon className="w-5 h-5 text-accent mb-1 mx-auto lg:mx-0" />
@@ -149,8 +147,8 @@ export const Hero = () => {
                     <Shield className="w-6 h-6 text-green-600" />
                   </div>
                   <div>
-                    <p className="font-bold text-foreground">100% Safe</p>
-                    <p className="text-sm text-muted-foreground">Verified drivers</p>
+                    <p className="font-bold text-foreground">Driver details</p>
+                    <p className="text-sm text-muted-foreground">Shown before you book</p>
                   </div>
                 </div>
               </motion.div>
@@ -165,8 +163,8 @@ export const Hero = () => {
                     <Clock className="w-6 h-6 text-accent" />
                   </div>
                   <div>
-                    <p className="font-bold text-foreground">On Time</p>
-                    <p className="text-sm text-muted-foreground">Always punctual</p>
+                    <p className="font-bold text-foreground">Live departures</p>
+                    <p className="text-sm text-muted-foreground">Check your travel date</p>
                   </div>
                 </div>
               </motion.div>

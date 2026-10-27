@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
-import { MapPin, Clock, Users, ArrowRight, Bus } from "lucide-react";
+import { MapPin, ArrowRight, Bus, CalendarDays } from "lucide-react";
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
 import { Button } from "@/components/ui/button";
@@ -14,20 +14,12 @@ const routes = [
     id: 1,
     origin: "Jos",
     destination: "Abuja",
-    price: 13000,
-    duration: "4 hours",
-    departures: ["7:00 AM", "1:00 PM"],
-    availableSeats: 7,
     image: josRock,
   },
   {
     id: 2,
     origin: "Abuja",
     destination: "Jos",
-    price: 13000,
-    duration: "4 hours",
-    departures: ["7:00 AM", "1:00 PM"],
-    availableSeats: 7,
     image: abujaCity,
   },
 ];
@@ -57,7 +49,7 @@ const Routes = () => {
               Our Routes & Schedules
             </h1>
             <p className="text-white/80 text-lg max-w-2xl mx-auto mb-8">
-              We currently operate both directions between Jos and Abuja.
+              We currently serve the Jos–Abuja corridor in both directions. Choose a date to see live departures, parks, seats, and fares.
             </p>
             
             {/* Search */}
@@ -76,7 +68,7 @@ const Routes = () => {
       {/* Routes Grid */}
       <section className="section-padding">
         <div className="container-custom">
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+          <div className="grid md:grid-cols-2 gap-8 max-w-5xl mx-auto">
             {filteredRoutes.map((route, index) => (
               <motion.div
                 key={route.id}
@@ -105,48 +97,16 @@ const Routes = () => {
 
                 {/* Route Details */}
                 <div className="p-6">
-                  <div className="flex items-center justify-between mb-4">
-                    <div className="flex items-center gap-2 text-muted-foreground">
-                      <Clock className="w-4 h-4" />
-                      <span className="text-sm">{route.duration}</span>
-                    </div>
-                    <div className="flex items-center gap-2 text-muted-foreground">
-                      <Users className="w-4 h-4" />
-                      <span className="text-sm">{route.availableSeats} seats</span>
-                    </div>
-                  </div>
-
-                  {/* Departure Times */}
-                  <div className="mb-4">
-                    <p className="text-sm text-muted-foreground mb-2">Departure times:</p>
-                    <div className="flex flex-wrap gap-2">
-                      {route.departures.slice(0, 3).map((time, i) => (
-                        <span
-                          key={i}
-                          className="px-3 py-1 bg-muted rounded-full text-xs font-medium text-foreground"
-                        >
-                          {time}
-                        </span>
-                      ))}
-                      {route.departures.length > 3 && (
-                        <span className="px-3 py-1 bg-accent/10 rounded-full text-xs font-medium text-accent">
-                          +{route.departures.length - 3} more
-                        </span>
-                      )}
-                    </div>
+                  <div className="mb-4 flex items-start gap-2 text-sm text-muted-foreground">
+                    <CalendarDays className="w-4 h-4 mt-0.5 text-accent" />
+                    <span>Check your travel date for the current fare, pickup park, and available seats.</span>
                   </div>
 
                   {/* Price and CTA */}
                   <div className="flex items-center justify-between pt-4 border-t border-border">
-                    <div>
-                      <p className="text-sm text-muted-foreground">From</p>
-                      <p className="text-2xl font-bold text-foreground">
-                        ₦{route.price.toLocaleString()}
-                      </p>
-                    </div>
                     <Link to={`/booking?origin=${encodeURIComponent(route.origin)}&destination=${encodeURIComponent(route.destination)}`}>
                       <Button variant="accent">
-                        Book Now
+                        Check availability
                         <ArrowRight className="w-4 h-4" />
                       </Button>
                     </Link>

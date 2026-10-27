@@ -1,7 +1,7 @@
 {
   "name": "Borix Express LTD",
   "short_name": "Borix Express",
-  "description": "Book safe, comfortable intercity bus travel across Nigeria",
+  "description": "Book intercity travel between Jos and Abuja",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#0B6E4F",

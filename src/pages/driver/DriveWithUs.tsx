@@ -8,13 +8,13 @@ import { Button } from "@/components/ui/button";
 const benefits = [
   {
     icon: Clock,
-    title: "Flexible Trips",
-    description: "Choose trips that fit your schedule. Drive when it works for you.",
+    title: "Route opportunities",
+    description: "Apply to drive on the Jos–Abuja corridor and review trip details with the team.",
   },
   {
     icon: DollarSign,
-    title: "Weekly Earnings",
-    description: "Earn competitive pay with weekly payouts directly to your bank account.",
+    title: "Payout details",
+    description: "Payment terms are confirmed during driver onboarding and recorded in your agreement.",
   },
   {
     icon: MapPin,
@@ -23,8 +23,8 @@ const benefits = [
   },
   {
     icon: Shield,
-    title: "Support & Safety",
-    description: "24/7 support, vehicle monitoring, and comprehensive safety protocols.",
+    title: "Support",
+    description: "Our support team is available daily between 6:00 AM and 10:00 PM.",
   },
 ];
 
@@ -60,7 +60,7 @@ const DriveWithUs = () => {
               <span className="text-accent">Borix Express</span>
             </h1>
             <p className="text-white/80 text-lg md:text-xl mb-10 max-w-2xl mx-auto">
-              Join Nigeria's fastest-growing intercity transport service. Earn great pay driving the Jos–Abuja route with a trusted brand.
+              Apply to drive on the Jos–Abuja route. Trip expectations and payment terms are reviewed during onboarding.
             </p>
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
               <Link to="/driver/apply">
@@ -164,21 +164,14 @@ const DriveWithUs = () => {
             >
               <div className="flex items-center gap-3 mb-6">
                 <Users className="w-8 h-8 text-accent" />
-                <h3 className="text-2xl font-bold">Join 50+ Drivers</h3>
+                <h3 className="text-2xl font-bold">Apply to join Borix</h3>
               </div>
               <p className="text-white/80 mb-6">
-                Our growing team of professional drivers covers the Jos–Abuja corridor daily, serving thousands of passengers.
+                Applications are reviewed before driver accounts are approved. Contact the team if you have questions about eligibility or onboarding.
               </p>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="bg-white/10 rounded-xl p-4 text-center">
-                  <p className="text-2xl font-bold text-accent">₦200K+</p>
-                  <p className="text-white/70 text-sm">Avg. Monthly Earnings</p>
-                </div>
-                <div className="bg-white/10 rounded-xl p-4 text-center">
-                  <p className="text-2xl font-bold text-accent">2</p>
-                  <p className="text-white/70 text-sm">Daily Routes</p>
-                </div>
-              </div>
+              <Link to="/driver/requirements" className="inline-flex items-center gap-2 font-semibold text-accent hover:underline">
+                Review driver requirements <ArrowRight className="w-4 h-4" />
+              </Link>
             </motion.div>
           </div>
         </div>
@@ -196,7 +189,7 @@ const DriveWithUs = () => {
               Ready to Start Earning?
             </h2>
             <p className="text-white/80 text-lg mb-8 max-w-xl mx-auto">
-              Apply today and start driving within days of approval.
+              Apply today. Eligible applicants will be contacted about next steps after review.
             </p>
             <Link to="/driver/apply">
               <Button className="btn-hero text-lg px-10 py-6">

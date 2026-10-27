@@ -1,38 +1,29 @@
 import { motion } from "framer-motion";
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
-import { Shield, Phone, AlertTriangle, Eye, MapPin, CheckCircle } from "lucide-react";
+import { Shield, Phone, AlertTriangle, CheckCircle } from "lucide-react";
 
 const safetyPolicies = [
-  "All passengers must wear seatbelts at all times",
-  "Maximum speed limit strictly enforced on all routes",
-  "No night driving — all trips operate during daylight hours",
-  "Mandatory rest breaks on long routes",
-  "Regular vehicle safety inspections before every trip",
-  "Zero tolerance for distracted driving",
+  "Wear your seatbelt throughout the journey.",
+  "Follow the driver's safety instructions and applicable road rules.",
+  "Before boarding, confirm that the driver, vehicle, route, and park match your booking details.",
+  "Keep your booking confirmation available and contact Borix support if trip details do not match.",
 ];
 
 const emergencyContacts = [
   { name: "Borix Express Emergency Line", number: "+234 903 657 3414" },
-  { name: "Nigeria Police (Emergency)", number: "112" },
   { name: "Federal Road Safety Corps (FRSC)", number: "122" },
-  { name: "National Emergency Management Agency", number: "0800-CALLNEMA" },
 ];
 
 const complianceRules = [
-  "All vehicles registered and insured with comprehensive coverage",
-  "Drivers undergo background checks and drug testing",
-  "Compliance with Federal Road Safety Corps regulations",
-  "Valid vehicle inspection certificates maintained",
-  "Fire extinguishers and first aid kits in every vehicle",
-  "Driver training programme on defensive driving techniques",
+  "Review the driver and vehicle information on the departure card before booking.",
+  "Use the pickup park shown on your departure and booking confirmation.",
+  "Contact the support team if you need to confirm a pickup location or report a safety concern.",
 ];
 
 const monitoringInfo = [
-  { icon: MapPin, title: "GPS Tracking", description: "Every vehicle is tracked in real-time throughout the journey." },
-  { icon: Eye, title: "Trip Monitoring", description: "Our operations team monitors all active trips and can intervene if needed." },
-  { icon: Phone, title: "24/7 Support", description: "Passengers and drivers can reach our support team at any time during a trip." },
-  { icon: AlertTriangle, title: "Incident Response", description: "Rapid response protocol for any road incidents with emergency services coordination." },
+  { icon: Phone, title: "Borix support", description: "Call +234 903 657 3414 daily from 6:00 AM to 10:00 PM." },
+  { icon: AlertTriangle, title: "Road emergency", description: "For a road crash or immediate danger, call the FRSC emergency line at 122." },
 ];
 
 const Safety = () => {
@@ -52,7 +43,7 @@ const Safety = () => {
               Safety at <span className="text-accent">Borix Express</span>
             </h1>
             <p className="text-white/80 text-lg md:text-xl max-w-2xl mx-auto">
-              Safety isn't just a policy — it's our promise. Every trip, every route, every driver.
+              Practical guidance for passengers before and during a trip.
             </p>
           </motion.div>
         </div>
@@ -62,7 +53,7 @@ const Safety = () => {
       <section className="section-padding">
         <div className="container-custom max-w-4xl">
           <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}>
-            <h2 className="text-3xl font-bold text-foreground mb-8">Passenger Safety Policy</h2>
+            <h2 className="text-3xl font-bold text-foreground mb-8">Passenger safety guidance</h2>
             <div className="space-y-3">
               {safetyPolicies.map((policy, i) => (
                 <div key={i} className="flex items-start gap-3 bg-card rounded-lg p-4 border border-border">
@@ -92,6 +83,9 @@ const Safety = () => {
                 </div>
               ))}
             </div>
+            <p className="mt-4 text-sm text-muted-foreground">
+              The FRSC lists 122 as its toll-free emergency line. See the <a className="font-semibold text-accent underline" href="https://frsc.gov.ng/commands/national-headquarters/" target="_blank" rel="noreferrer">official FRSC contact page</a>.
+            </p>
           </motion.div>
         </div>
       </section>
@@ -100,7 +94,7 @@ const Safety = () => {
       <section className="section-padding">
         <div className="container-custom max-w-4xl">
           <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}>
-            <h2 className="text-3xl font-bold text-foreground mb-8">Compliance & Regulations</h2>
+            <h2 className="text-3xl font-bold text-foreground mb-8">Before boarding</h2>
             <div className="space-y-3">
               {complianceRules.map((rule, i) => (
                 <div key={i} className="flex items-start gap-3 bg-card rounded-lg p-4 border border-border">
@@ -117,7 +111,7 @@ const Safety = () => {
       <section className="section-padding bg-muted">
         <div className="container-custom max-w-4xl">
           <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}>
-            <h2 className="text-3xl font-bold text-foreground mb-8">Trip Monitoring</h2>
+            <h2 className="text-3xl font-bold text-foreground mb-8">Getting help</h2>
             <div className="grid sm:grid-cols-2 gap-6">
               {monitoringInfo.map((item, i) => (
                 <div key={i} className="card-elevated">

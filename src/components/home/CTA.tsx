@@ -31,7 +31,7 @@ export const CTA = () => {
             Ready to Start Your Journey?
           </h2>
           <p className="text-lg text-white/80 mb-8">
-            Book your seat now and experience the best intercity transport service in Nigeria. 
+            Check current departures between Jos and Abuja and review the trip details before booking.
             Safe, comfortable, and always on time.
           </p>
 

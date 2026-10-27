@@ -623,7 +623,7 @@ const Confirmation = () => {
                   </li>
 
                   <li>
-                    • For cancellations, contact us at least 24 hours before departure
+                    • For cancellation help, contact us as early as possible, preferably at least 24 hours before departure
                   </li>
 
                   <li>

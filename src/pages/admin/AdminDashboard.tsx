@@ -2,7 +2,6 @@ import { useState, useEffect } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import {
-  Bus,
   LayoutDashboard,
   MapPin,
   Calendar,
@@ -14,9 +13,6 @@ import {
   LogOut,
   Menu,
   X,
-  TrendingUp,
-  TrendingDown,
-  Bell,
   Loader2,
   ClipboardList,
 } from "lucide-react";
@@ -37,43 +33,11 @@ const sidebarItems = [
   { name: "Settings", icon: Settings, path: "/admin/settings" },
 ];
 
-const stats = [
-  {
-    name: "Total Bookings",
-    value: "1,284",
-    change: "+12.5%",
-    trend: "up",
-    icon: Ticket,
-  },
-  {
-    name: "Revenue (Today)",
-    value: "₦2.4M",
-    change: "+8.2%",
-    trend: "up",
-    icon: CreditCard,
-  },
-  {
-    name: "Active Trips",
-    value: "24",
-    change: "-2",
-    trend: "down",
-    icon: Bus,
-  },
-  {
-    name: "Available Seats",
-    value: "456",
-    change: "+120",
-    trend: "up",
-    icon: Users,
-  },
-];
-
-const recentBookings = [
-  { id: "BRX-001", route: "Lagos → Abuja", customer: "Chidi O.", amount: 13000, status: "confirmed" },
-  { id: "BRX-002", route: "Jos → Abuja", customer: "Amina I.", amount: 8000, status: "confirmed" },
-  { id: "BRX-003", route: "Lagos → PH", customer: "Emeka N.", amount: 12000, status: "pending" },
-  { id: "BRX-004", route: "Kano → Lagos", customer: "Fatima A.", amount: 18000, status: "confirmed" },
-  { id: "BRX-005", route: "Enugu → Lagos", customer: "John D.", amount: 10000, status: "cancelled" },
+const dashboardShortcuts = [
+  { name: "Manage trips", description: "Create departures and assign drivers.", path: "/admin/trips", icon: Calendar },
+  { name: "View bookings", description: "Review passenger bookings and changes.", path: "/admin/bookings", icon: Ticket },
+  { name: "Manage drivers", description: "Review driver accounts and applications.", path: "/admin/drivers", icon: Users },
+  { name: "Review payments", description: "Open payment and refund records.", path: "/admin/payments", icon: CreditCard },
 ];
 
 const AdminDashboard = () => {
@@ -168,14 +132,10 @@ const AdminDashboard = () => {
               </button>
               <div>
                 <h1 className="text-xl font-bold text-foreground">Dashboard</h1>
-                <p className="text-sm text-muted-foreground">Welcome back, Admin</p>
+              <p className="text-sm text-muted-foreground">Welcome back, {user.email}</p>
               </div>
             </div>
             <div className="flex items-center gap-4">
-              <button className="relative p-2 rounded-lg hover:bg-muted">
-                <Bell className="w-5 h-5 text-muted-foreground" />
-                <span className="absolute top-1 right-1 w-2 h-2 bg-accent rounded-full" />
-              </button>
               <div className="w-10 h-10 rounded-full bg-accent flex items-center justify-center">
                 <span className="text-accent-foreground font-bold">
                   {user.email?.[0]?.toUpperCase() || 'A'}
@@ -187,103 +147,30 @@ const AdminDashboard = () => {
 
         {/* Dashboard Content */}
         <div className="p-6">
-          {/* Stats Grid */}
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-            {stats.map((stat, index) => (
+          <div className="mb-6">
+            <h2 className="text-xl font-bold text-foreground mb-2">Operations</h2>
+            <p className="text-muted-foreground">Open the relevant section to see current records.</p>
+          </div>
+          <div className="grid sm:grid-cols-2 gap-5">
+            {dashboardShortcuts.map((shortcut, index) => (
               <motion.div
-                key={index}
+                key={shortcut.path}
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: index * 0.1 }}
-                className="bg-card rounded-2xl p-6 shadow-sm"
+                transition={{ delay: index * 0.08 }}
               >
-                <div className="flex items-start justify-between mb-4">
-                  <div className="w-12 h-12 rounded-xl bg-accent/10 flex items-center justify-center">
-                    <stat.icon className="w-6 h-6 text-accent" />
-                  </div>
-                  <span
-                    className={`flex items-center gap-1 text-sm font-medium ${
-                      stat.trend === "up" ? "text-green-600" : "text-red-500"
-                    }`}
-                  >
-                    {stat.trend === "up" ? (
-                      <TrendingUp className="w-4 h-4" />
-                    ) : (
-                      <TrendingDown className="w-4 h-4" />
-                    )}
-                    {stat.change}
+                <Link to={shortcut.path} className="flex h-full items-center gap-4 rounded-2xl border border-border bg-card p-6 shadow-sm transition hover:border-accent/50 hover:shadow-md">
+                  <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-accent/10">
+                    <shortcut.icon className="h-6 w-6 text-accent" />
                   </span>
-                </div>
-                <p className="text-2xl font-bold text-foreground">{stat.value}</p>
-                <p className="text-sm text-muted-foreground">{stat.name}</p>
+                  <span>
+                    <span className="block font-bold text-foreground">{shortcut.name}</span>
+                    <span className="mt-1 block text-sm text-muted-foreground">{shortcut.description}</span>
+                  </span>
+                </Link>
               </motion.div>
             ))}
           </div>
-
-          {/* Recent Bookings */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.4 }}
-            className="bg-card rounded-2xl shadow-sm"
-          >
-            <div className="p-6 border-b border-border flex items-center justify-between">
-              <h2 className="text-lg font-bold text-foreground">Recent Bookings</h2>
-              <Link to="/admin/bookings">
-                <Button variant="ghost" size="sm">
-                  View All
-                </Button>
-              </Link>
-            </div>
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead>
-                  <tr className="border-b border-border">
-                    <th className="text-left py-4 px-6 text-sm font-medium text-muted-foreground">
-                      Booking ID
-                    </th>
-                    <th className="text-left py-4 px-6 text-sm font-medium text-muted-foreground">
-                      Route
-                    </th>
-                    <th className="text-left py-4 px-6 text-sm font-medium text-muted-foreground">
-                      Customer
-                    </th>
-                    <th className="text-left py-4 px-6 text-sm font-medium text-muted-foreground">
-                      Amount
-                    </th>
-                    <th className="text-left py-4 px-6 text-sm font-medium text-muted-foreground">
-                      Status
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {recentBookings.map((booking) => (
-                    <tr key={booking.id} className="border-b border-border hover:bg-muted/50">
-                      <td className="py-4 px-6 font-mono text-sm">{booking.id}</td>
-                      <td className="py-4 px-6">{booking.route}</td>
-                      <td className="py-4 px-6">{booking.customer}</td>
-                      <td className="py-4 px-6 font-medium">
-                        ₦{booking.amount.toLocaleString()}
-                      </td>
-                      <td className="py-4 px-6">
-                        <span
-                          className={`px-3 py-1 rounded-full text-xs font-medium ${
-                            booking.status === "confirmed"
-                              ? "bg-green-100 text-green-700"
-                              : booking.status === "pending"
-                              ? "bg-yellow-100 text-yellow-700"
-                              : "bg-red-100 text-red-700"
-                          }`}
-                        >
-                          {booking.status}
-                        </span>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </motion.div>
         </div>
       </main>
     </div>
