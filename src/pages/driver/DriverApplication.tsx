@@ -36,44 +36,9 @@ const STEPS = [
   { id: 4, label: "Bank & Guarantor", icon: CreditCard },
 ];
 
-const nigerianStates = [
-  "Abia",
-  "Adamawa",
-  "Akwa Ibom",
-  "Anambra",
-  "Bauchi",
-  "Bayelsa",
-  "Benue",
-  "Borno",
-  "Cross River",
-  "Delta",
-  "Ebonyi",
-  "Edo",
-  "Ekiti",
-  "Enugu",
-  "FCT",
-  "Gombe",
-  "Imo",
-  "Jigawa",
-  "Kaduna",
-  "Kano",
-  "Katsina",
-  "Kebbi",
-  "Kogi",
-  "Kwara",
-  "Lagos",
-  "Nasarawa",
-  "Niger",
-  "Ogun",
-  "Ondo",
-  "Osun",
-  "Oyo",
-  "Plateau",
-  "Rivers",
-  "Sokoto",
-  "Taraba",
-  "Yobe",
-  "Zamfara",
+const operatingStates = [
+  { value: "Plateau", label: "Jos (Plateau State)" },
+  { value: "FCT", label: "FCT (Abuja)" },
 ];
 
 type ApplicationFiles = {
@@ -678,12 +643,12 @@ const DriverApplication = () => {
                         </SelectTrigger>
 
                         <SelectContent>
-                          {nigerianStates.map((state) => (
+                          {operatingStates.map((state) => (
                             <SelectItem
-                              key={state}
-                              value={state}
+                              key={state.value}
+                              value={state.value}
                             >
-                              {state}
+                              {state.label}
                             </SelectItem>
                           ))}
                         </SelectContent>

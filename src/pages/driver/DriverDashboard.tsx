@@ -29,6 +29,14 @@ type Trip = {
   route: { origin: string; destination: string } | null;
 };
 
+type DriverDeparture = {
+  id: string;
+  travel_date: string;
+  departure_time: string;
+  status: string;
+  route: { origin: string; destination: string } | null;
+};
+
 type Earning = {
   id: string;
   amount: number;
@@ -65,6 +73,7 @@ const DriverDashboard = () => {
   const navigate = useNavigate();
   const [driver, setDriver] = useState<Driver | null>(null);
   const [trips, setTrips] = useState<Trip[]>([]);
+  const [driverDepartures, setDriverDepartures] = useState<DriverDeparture[]>([]);
   const [earnings, setEarnings] = useState<Earning[]>([]);
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [passengerBookings, setPassengerBookings] = useState<PassengerBooking[]>([]);
@@ -122,13 +131,20 @@ const DriverDashboard = () => {
   };
 
   const fetchData = async (driverId: string) => {
-    const [sessionRes, tripsRes, earningsRes, notifRes] = await Promise.all([
+    const [sessionRes, tripsRes, departuresRes, earningsRes, notifRes] = await Promise.all([
       supabase.auth.getSession(),
       supabase
         .from('driver_trips')
         .select('*, route:routes(origin, destination)')
         .eq('driver_id', driverId)
         .order('trip_date', { ascending: false })
+        .limit(20),
+      supabase
+        .from('departures')
+        .select('id, travel_date, departure_time, status, route:routes(origin, destination)')
+        .eq('driver_id', driverId)
+        .order('travel_date', { ascending: false })
+        .order('departure_time', { ascending: false })
         .limit(20),
       supabase
         .from('driver_earnings')
@@ -145,6 +161,11 @@ const DriverDashboard = () => {
     ]);
 
     if (tripsRes.data) setTrips(tripsRes.data as any);
+    if (departuresRes.error) {
+      console.error('Failed to load driver departures:', departuresRes.error);
+    } else {
+      setDriverDepartures((departuresRes.data ?? []) as unknown as DriverDeparture[]);
+    }
     if (earningsRes.data) setEarnings(earningsRes.data as Earning[]);
     if (notifRes.data) {
       const nextNotifications = notifRes.data as Notification[];
@@ -237,7 +258,10 @@ const DriverDashboard = () => {
 
   const totalEarnings = earnings.reduce((s, e) => s + e.amount, 0);
   const pendingPay = earnings.filter(e => !e.paid).reduce((s, e) => s + e.amount, 0);
-  const completedTrips = trips.filter(t => t.status === 'completed').length;
+  const completedTrips = trips.filter(t => t.status === 'completed').length +
+    driverDepartures.filter((departure) => departure.status === 'completed').length;
+  const assignedTripCount = trips.filter(t => t.status === 'assigned').length +
+        driverDepartures.filter((departure) => ['scheduled', 'boarding', 'in_transit'].includes(departure.status)).length;
   const unreadNotifs = notifications.filter(n => !n.read).length;
   const confirmedPassengerCount = passengerBookings.reduce(
     (count, booking) => count + booking.number_of_seats,
@@ -320,7 +344,7 @@ const DriverDashboard = () => {
               { label: "Completed Trips", value: completedTrips, icon: CheckCircle },
               { label: "Total Earnings", value: `₦${totalEarnings.toLocaleString()}`, icon: TrendingUp },
               { label: "Pending Pay", value: `₦${pendingPay.toLocaleString()}`, icon: DollarSign },
-              { label: "Assigned Trips", value: trips.filter(t => t.status === 'assigned').length, icon: Calendar },
+              { label: "Assigned Trips", value: assignedTripCount, icon: Calendar },
             ].map((stat, i) => (
               <motion.div key={i} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.1 }} className="bg-card rounded-2xl p-5 shadow-sm">
                 <div className="w-10 h-10 rounded-xl bg-accent/10 flex items-center justify-center mb-3">
@@ -336,9 +360,9 @@ const DriverDashboard = () => {
           {activeTab === "trips" && (
             <div className="space-y-4">
               <h2 className="text-lg font-bold text-foreground">Your Trips</h2>
-              {trips.length === 0 ? (
+              {trips.length === 0 && driverDepartures.length === 0 ? (
                 <div className="bg-card rounded-xl p-10 text-center text-muted-foreground">No trips assigned yet.</div>
-              ) : (
+              ) : trips.length > 0 && (
                 trips.map((trip) => (
                   <motion.div key={trip.id} initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="bg-card rounded-xl p-5 border border-border">
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -377,6 +401,30 @@ const DriverDashboard = () => {
                     )}
                   </motion.div>
                 ))
+              )}
+
+              {driverDepartures.length > 0 && (
+                <div className="space-y-4 pt-2">
+                  <h3 className="text-base font-semibold text-foreground">Assigned Departures</h3>
+                  {driverDepartures.map((departure) => (
+                    <motion.div key={departure.id} initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="bg-card rounded-xl p-5 border border-border">
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                        <div>
+                          <p className="font-bold text-foreground">
+                            {departure.route ? `${departure.route.origin} → ${departure.route.destination}` : "Route details unavailable"}
+                          </p>
+                          <div className="flex items-center gap-4 text-sm text-muted-foreground mt-1">
+                            <span className="flex items-center gap-1"><Calendar className="w-4 h-4" /> {departure.travel_date}</span>
+                            <span className="flex items-center gap-1"><Clock className="w-4 h-4" /> {departure.departure_time}</span>
+                          </div>
+                        </div>
+                        <Badge className={departure.status === 'completed' ? "bg-green-100 text-green-700" : departure.status === 'cancelled' ? "bg-red-100 text-red-700" : "bg-blue-100 text-blue-700"}>
+                          {departure.status}
+                        </Badge>
+                      </div>
+                    </motion.div>
+                  ))}
+                </div>
               )}
             </div>
           )}

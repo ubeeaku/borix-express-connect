@@ -53,7 +53,7 @@ export const Hero = () => {
               className="text-4xl md:text-5xl lg:text-6xl font-extrabold text-white leading-tight mb-4"
             >
               Reliable Intercity{" "}
-              <span className="text-accent">Transport</span> Across Nigeria
+              <span className="text-accent">Transport</span> Between Jos and Abuja
             </motion.h1>
 
             <motion.p
@@ -106,7 +106,7 @@ export const Hero = () => {
             >
               {[
                 { icon: Users, value: "50K+", label: "Happy Customers" },
-                { icon: MapPin, value: "20+", label: "Routes" },
+                { icon: MapPin, value: "2", label: "Routes" },
                 { icon: TrendingUp, value: "99%", label: "On-time Rate" },
               ].map((stat, index) => (
                 <div key={index} className="px-2 text-center lg:text-left first:pl-0">
