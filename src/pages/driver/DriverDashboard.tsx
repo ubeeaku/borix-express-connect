@@ -1,13 +1,14 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import {
-  Car, MapPin, DollarSign, Calendar, Bell, Phone, LogOut, Clock,
+  Car, MapPin, DollarSign, Calendar, Bell, Phone, LogOut, Clock, Users,
   CheckCircle, XCircle, TrendingUp, Loader2, Menu, X
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
+import { apiUrl } from "@/lib/apiBase";
 import { toast } from "@/hooks/use-toast";
 import borixLogo from "@/assets/borix-logo-white.png";
 
@@ -46,15 +47,32 @@ type Notification = {
   created_at: string;
 };
 
+type PassengerBooking = {
+  id: string;
+  booking_reference: string;
+  passenger_name: string;
+  passenger_phone: string;
+  travel_date: string;
+  departure_time: string;
+  number_of_seats: number;
+  total_amount: number;
+  seats: number[];
+  route: { origin: string; destination: string } | null;
+  departure_status: string | null;
+};
+
 const DriverDashboard = () => {
   const navigate = useNavigate();
   const [driver, setDriver] = useState<Driver | null>(null);
   const [trips, setTrips] = useState<Trip[]>([]);
   const [earnings, setEarnings] = useState<Earning[]>([]);
   const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [passengerBookings, setPassengerBookings] = useState<PassengerBooking[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("trips");
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const seenNotificationIds = useRef<Set<string>>(new Set());
+  const notificationsInitialized = useRef(false);
 
   useEffect(() => {
     checkDriverAuth();
@@ -104,7 +122,8 @@ const DriverDashboard = () => {
   };
 
   const fetchData = async (driverId: string) => {
-    const [tripsRes, earningsRes, notifRes] = await Promise.all([
+    const [sessionRes, tripsRes, earningsRes, notifRes] = await Promise.all([
+      supabase.auth.getSession(),
       supabase
         .from('driver_trips')
         .select('*, route:routes(origin, destination)')
@@ -127,8 +146,59 @@ const DriverDashboard = () => {
 
     if (tripsRes.data) setTrips(tripsRes.data as any);
     if (earningsRes.data) setEarnings(earningsRes.data as Earning[]);
-    if (notifRes.data) setNotifications(notifRes.data as Notification[]);
+    if (notifRes.data) {
+      const nextNotifications = notifRes.data as Notification[];
+      const newBookingNotification = notificationsInitialized.current
+        ? nextNotifications.find(
+            (notification) =>
+              notification.type === 'booking' &&
+              !seenNotificationIds.current.has(notification.id)
+          )
+        : null;
+
+      if (newBookingNotification) {
+        toast({
+          title: newBookingNotification.title,
+          description: newBookingNotification.message,
+        });
+      }
+
+      seenNotificationIds.current = new Set(
+        nextNotifications.map((notification) => notification.id)
+      );
+      notificationsInitialized.current = true;
+      setNotifications(nextNotifications);
+    }
+
+    const accessToken = sessionRes.data.session?.access_token;
+    if (accessToken) {
+      try {
+        const response = await fetch(apiUrl('/api/driver/bookings'), {
+          headers: { Authorization: `Bearer ${accessToken}` },
+        });
+        const result = await response.json();
+        if (!response.ok || !result?.success) {
+          throw new Error(result?.error || 'Could not load passenger bookings');
+        }
+        setPassengerBookings(result.bookings as PassengerBooking[]);
+      } catch (error) {
+        console.error('Failed to load passenger bookings:', error);
+      }
+    }
   };
+
+  useEffect(() => {
+    if (!driver?.id) return;
+
+    const refresh = () => { void fetchData(driver.id); };
+    const interval = window.setInterval(refresh, 15000);
+    window.addEventListener('focus', refresh);
+
+    return () => {
+      window.clearInterval(interval);
+      window.removeEventListener('focus', refresh);
+    };
+  }, [driver?.id]);
 
   const handleTripAction = async (tripId: string, action: 'accepted' | 'declined') => {
     const { error } = await supabase
@@ -169,9 +239,14 @@ const DriverDashboard = () => {
   const pendingPay = earnings.filter(e => !e.paid).reduce((s, e) => s + e.amount, 0);
   const completedTrips = trips.filter(t => t.status === 'completed').length;
   const unreadNotifs = notifications.filter(n => !n.read).length;
+  const confirmedPassengerCount = passengerBookings.reduce(
+    (count, booking) => count + booking.number_of_seats,
+    0
+  );
 
   const tabs = [
     { id: "trips", label: "My Trips", icon: MapPin },
+    { id: "passengers", label: "Passengers", icon: Users, badge: confirmedPassengerCount },
     { id: "earnings", label: "Earnings", icon: DollarSign },
     { id: "notifications", label: "Notifications", icon: Bell, badge: unreadNotifs },
   ];
@@ -300,6 +375,50 @@ const DriverDashboard = () => {
                     {trip.earnings > 0 && (
                       <p className="text-sm text-accent font-semibold mt-2">Earnings: ₦{trip.earnings.toLocaleString()}</p>
                     )}
+                  </motion.div>
+                ))
+              )}
+            </div>
+          )}
+
+          {activeTab === "passengers" && (
+            <div className="space-y-4">
+              <div className="flex items-center justify-between gap-3">
+                <div>
+                  <h2 className="text-lg font-bold text-foreground">Passenger Bookings</h2>
+                  <p className="text-sm text-muted-foreground">Confirmed passengers for your departures</p>
+                </div>
+                <Badge variant="secondary">{confirmedPassengerCount} seat{confirmedPassengerCount === 1 ? "" : "s"}</Badge>
+              </div>
+              {passengerBookings.length === 0 ? (
+                <div className="bg-card rounded-xl p-10 text-center text-muted-foreground">
+                  No confirmed passenger bookings yet. New bookings for your departures will appear here.
+                </div>
+              ) : (
+                passengerBookings.map((booking) => (
+                  <motion.div key={booking.id} initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="bg-card rounded-xl p-5 border border-border">
+                    <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
+                      <div>
+                        <p className="font-bold text-foreground">
+                          {booking.route ? `${booking.route.origin} → ${booking.route.destination}` : "Passenger booking"}
+                        </p>
+                        <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-muted-foreground mt-1">
+                          <span className="flex items-center gap-1"><Calendar className="w-4 h-4" /> {booking.travel_date}</span>
+                          <span className="flex items-center gap-1"><Clock className="w-4 h-4" /> {booking.departure_time}</span>
+                        </div>
+                      </div>
+                      <Badge className="bg-green-100 text-green-700">Confirmed</Badge>
+                    </div>
+                    <div className="mt-4 grid sm:grid-cols-2 gap-3 text-sm">
+                      <div>
+                        <p className="font-semibold text-foreground">{booking.passenger_name}</p>
+                        <a href={`tel:${booking.passenger_phone}`} className="text-accent hover:underline">{booking.passenger_phone}</a>
+                      </div>
+                      <div className="text-muted-foreground">
+                        <p>{booking.number_of_seats} seat{booking.number_of_seats === 1 ? "" : "s"}{booking.seats.length ? ` · Seat${booking.seats.length === 1 ? "" : "s"} ${booking.seats.join(", ")}` : ""}</p>
+                        <p>₦{booking.total_amount.toLocaleString()} · {booking.booking_reference}</p>
+                      </div>
+                    </div>
                   </motion.div>
                 ))
               )}
