@@ -97,22 +97,24 @@ export const Hero = () => {
               </Link>
             </motion.div>
 
-            {/* Stats */}
+            {/* Route count */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.6 }}
-              className="grid grid-cols-1 max-w-xs gap-2 mt-12 pt-8 border-t border-white/10"
+              className="mt-12 max-w-xs mx-auto lg:mx-0"
             >
-              {[
-                { icon: MapPin, value: "2", label: "Travel directions" },
-              ].map((stat, index) => (
-                <div key={index} className="px-2 text-center lg:text-left first:pl-0">
-                  <stat.icon className="w-5 h-5 text-accent mb-1 mx-auto lg:mx-0" />
-                  <p className="text-2xl md:text-3xl font-bold text-accent leading-none">{stat.value}</p>
-                  <p className="text-xs md:text-sm text-white/60 mt-1">{stat.label}</p>
+              <div
+                aria-hidden="true"
+                className="h-0.5 w-16 mx-auto lg:mx-0 rounded-full bg-accent/70 mb-5"
+              />
+              <div className="flex items-center justify-center lg:justify-start gap-3">
+                <MapPin aria-hidden="true" className="w-6 h-6 shrink-0 text-accent" />
+                <div className="flex items-baseline gap-2">
+                  <p className="text-3xl md:text-4xl font-bold text-accent leading-none">2+</p>
+                  <p className="text-sm md:text-base font-medium text-white/75">Routes</p>
                 </div>
-              ))}
+              </div>
             </motion.div>
           </motion.div>
 
