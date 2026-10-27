@@ -5,7 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
  * Fetches the lowest active route fare so marketing surfaces (hero, features)
  * stay in sync with prices managed from the admin dashboard.
  */
-export const useMinRoutePrice = (fallback = 13000) => {
+export const useMinRoutePrice = (fallback = 15000) => {
   const [price, setPrice] = useState<number>(fallback);
   const [route, setRoute] = useState<{ origin: string; destination: string } | null>(null);
 

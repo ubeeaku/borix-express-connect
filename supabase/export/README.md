@@ -7,7 +7,7 @@ Everything is env-var driven; there are **no hardcoded credentials** anywhere in
 In your Supabase dashboard → **SQL Editor**, run in this order:
 
 1. `supabase/export/01_schema.sql` — all tables, enums, functions, triggers, RLS policies, grants, and the private `driver-documents` storage bucket.
-2. `supabase/export/02_seed.sql` — routes (Jos ⇄ Abuja @ ₦13,000), parks, platform settings.
+2. `supabase/export/02_seed.sql` — routes (Jos ⇄ Abuja @ ₦15,000), parks, platform settings.
 
 Then create your admin user: **Authentication → Users → Add user**, then run
 

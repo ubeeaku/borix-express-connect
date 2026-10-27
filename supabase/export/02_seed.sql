@@ -9,6 +9,6 @@ INSERT INTO public.parks VALUES ('067a6179-ef4d-4c33-b8a5-0b41d5d9754a', 'Jabi P
 
 INSERT INTO public.platform_settings VALUES (true, 2000, '2026-06-06 08:53:06.060095+00', '2026-06-06 08:53:06.060095+00');
 
-INSERT INTO public.routes VALUES ('3c05745f-4ad8-44ac-b299-ab770dc32bd9', 'Jos', 'Abuja', 13000, '2026-01-24 12:03:12.601923+00');
-INSERT INTO public.routes VALUES ('646e6297-9b77-4608-a9df-f923c42494f5', 'Abuja', 'Jos', 13000, '2026-01-24 12:03:12.601923+00');
+INSERT INTO public.routes VALUES ('3c05745f-4ad8-44ac-b299-ab770dc32bd9', 'Jos', 'Abuja', 15000, '2026-01-24 12:03:12.601923+00');
+INSERT INTO public.routes VALUES ('646e6297-9b77-4608-a9df-f923c42494f5', 'Abuja', 'Jos', 15000, '2026-01-24 12:03:12.601923+00');
 
