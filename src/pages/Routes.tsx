@@ -57,13 +57,13 @@ const Routes = () => {
               Our Routes & Schedules
             </h1>
             <p className="text-white/80 text-lg max-w-2xl mx-auto mb-8">
-              Find the best route for your journey. We cover major cities across Nigeria.
+              We currently operate both directions between Jos and Abuja.
             </p>
             
             {/* Search */}
             <div className="max-w-md mx-auto">
               <Input
-                placeholder="Search routes (e.g. Lagos, Abuja)"
+                placeholder="Search routes (e.g. Jos, Abuja)"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="bg-white/10 border-white/20 text-white placeholder:text-white/60 h-12"
