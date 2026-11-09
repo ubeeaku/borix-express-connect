@@ -1,3 +1,4 @@
+import { isNigeriaDepartureInPast } from '../../src/lib/nigeriaTime.js';
 import { createClient } from '@supabase/supabase-js';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { VercelRequest, VercelResponse } from '@vercel/node';
@@ -367,15 +368,11 @@ export async function prepareDeparture(
     };
   }
 
-  const departureDate = String(departure.travel_date).slice(0, 10);
-  const departureTime = String(departure.departure_time).slice(0, 8);
-  const departureTimestamp = Date.parse(
-    `${departureDate}T${departureTime}+01:00`
-  );
-
   if (
-    !Number.isFinite(departureTimestamp) ||
-    departureTimestamp <= Date.now()
+    isNigeriaDepartureInPast(
+      String(departure.travel_date).slice(0, 10),
+      String(departure.departure_time)
+    )
   ) {
     return {
       error: {
