@@ -407,6 +407,25 @@ const Booking = () => {
                   </div>
                   {selectedDeparture && (
                     <>
+                      {selectedDeparture.driver && (
+                        <div className="flex items-center gap-3 rounded-xl bg-muted p-3">
+                          {selectedDeparture.driver.profile_photo_url ? (
+                            <img
+                              src={selectedDeparture.driver.profile_photo_url}
+                              alt={`${selectedDeparture.driver.full_name} profile`}
+                              className="h-12 w-12 shrink-0 rounded-full object-cover"
+                            />
+                          ) : (
+                            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-primary text-sm font-bold text-primary-foreground">
+                              {selectedDeparture.driver.full_name.split(" ").map((part) => part[0]).slice(0, 2).join("").toUpperCase()}
+                            </div>
+                          )}
+                          <div className="min-w-0">
+                            <p className="text-xs text-muted-foreground">Selected driver</p>
+                            <p className="truncate font-semibold text-foreground">{selectedDeparture.driver.full_name}</p>
+                          </div>
+                        </div>
+                      )}
                       <div className="flex items-center gap-2 text-foreground">
                         <Clock className="w-4 h-4 text-accent" />{selectedDeparture.departure_time}
                       </div>

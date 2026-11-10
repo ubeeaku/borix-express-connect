@@ -76,10 +76,16 @@ const nigerianStates = [
   "Zamfara",
 ];
 
+const acceptedProfilePhoto = (file: File | null): boolean =>
+  !!file &&
+  ["image/jpeg", "image/png", "image/webp"].includes(file.type) &&
+  file.size <= 5 * 1024 * 1024;
+
 type ApplicationFiles = {
   drivers_license: File | null;
   nin: File | null;
   passport_photo: File | null;
+  profile_photo: File | null;
   vehicle_papers: File | null;
   roadworthiness: File | null;
 };
@@ -100,6 +106,7 @@ const DriverApplication = () => {
     drivers_license: null,
     nin: null,
     passport_photo: null,
+    profile_photo: null,
     vehicle_papers: null,
     roadworthiness: null,
   });
@@ -303,15 +310,25 @@ const DriverApplication = () => {
         if (
           !files.drivers_license ||
           !files.nin ||
-          !files.passport_photo
+          !files.passport_photo ||
+          !files.profile_photo
         ) {
           toast({
             title: "Please upload all required documents",
             description:
-              "Driver's License, NIN and Passport Photograph are required.",
+              "Driver's License, NIN, Passport Photograph and a separate profile photo are required.",
             variant: "destructive",
           });
 
+          return false;
+        }
+
+        if (!acceptedProfilePhoto(files.profile_photo)) {
+          toast({
+            title: "Choose a valid profile photo",
+            description: "Use a JPG, PNG or WebP image up to 5 MB. This photo will be shown to passengers after approval.",
+            variant: "destructive",
+          });
           return false;
         }
 
@@ -370,6 +387,7 @@ const DriverApplication = () => {
         drivers_license_url: null,
         nin_url: null,
         passport_photo_url: null,
+        profile_photo_url: null,
         vehicle_papers_url: null,
         roadworthiness_url: null,
       };
@@ -392,6 +410,14 @@ const DriverApplication = () => {
         urls.passport_photo_url = await uploadFile(
           files.passport_photo,
           "photos"
+        );
+      }
+
+      if (files.profile_photo) {
+        // Keep the passenger-facing photo private until an admin approves the application.
+        urls.profile_photo_url = await uploadFile(
+          files.profile_photo,
+          "profile-photos"
         );
       }
 
@@ -910,6 +936,10 @@ const DriverApplication = () => {
                       label: "Passport Photograph *",
                     },
                     {
+                      key: "profile_photo" as keyof ApplicationFiles,
+                      label: "Driver Profile Photo *",
+                    },
+                    {
                       key: "vehicle_papers" as keyof ApplicationFiles,
                       label: "Vehicle Papers (if owned)",
                     },
@@ -924,7 +954,7 @@ const DriverApplication = () => {
                       <div className="mt-1 relative">
                         <input
                           type="file"
-                          accept="image/*,.pdf"
+                          accept={key === "profile_photo" ? "image/jpeg,image/png,image/webp" : "image/*,.pdf"}
                           onChange={(e) =>
                             handleFileChange(
                               key,
@@ -960,6 +990,9 @@ const DriverApplication = () => {
                           </span>
                         </div>
                       </div>
+                      {key === "profile_photo" && (
+                        <p className="mt-1 text-xs text-muted-foreground">This separate photo is stored privately while your application is pending and shown to passengers after approval. Use JPG, PNG or WebP up to 5 MB.</p>
+                      )}
                     </div>
                   ))}
                 </motion.div>

@@ -296,6 +296,7 @@ export type Database = {
           nin_url: string | null
           park_id: string | null
           passport_photo_url: string | null
+          profile_photo_url: string | null
           phone: string
           roadworthiness_url: string | null
           state: string
@@ -333,6 +334,7 @@ export type Database = {
           nin_url?: string | null
           park_id?: string | null
           passport_photo_url?: string | null
+          profile_photo_url?: string | null
           phone: string
           roadworthiness_url?: string | null
           state: string
@@ -370,6 +372,7 @@ export type Database = {
           nin_url?: string | null
           park_id?: string | null
           passport_photo_url?: string | null
+          profile_photo_url?: string | null
           phone?: string
           roadworthiness_url?: string | null
           state?: string
@@ -1160,6 +1163,10 @@ export type Database = {
         Returns: boolean
       }
       is_admin: { Args: { _user_id: string }; Returns: boolean }
+      update_own_driver_profile: {
+        Args: { p_phone?: string | null; p_profile_photo_url?: string | null }
+        Returns: undefined
+      }
     }
     Enums: {
       app_role: "admin" | "user" | "driver"

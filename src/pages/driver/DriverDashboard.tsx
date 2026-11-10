@@ -3,7 +3,7 @@ import { useNavigate, Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import {
   Car, MapPin, DollarSign, Calendar, Bell, Phone, LogOut, Clock,
-  CheckCircle, XCircle, TrendingUp, Loader2, Menu, X
+  CheckCircle, XCircle, TrendingUp, Loader2, Menu, X, UserRound
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -11,12 +11,14 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import borixLogo from "@/assets/borix-logo-white.png";
 import DriverTripProposals from "@/components/driver/DriverTripProposals";
+import DriverProfile from "@/components/driver/DriverProfile";
 
 type Driver = {
   id: string;
   full_name: string;
   phone: string;
   email: string | null;
+  profile_photo_url: string | null;
   status: string;
 };
 
@@ -175,6 +177,7 @@ const DriverDashboard = () => {
     { id: "propose", label: "Propose Trip", icon: Car },
     { id: "earnings", label: "Earnings", icon: DollarSign },
     { id: "notifications", label: "Notifications", icon: Bell, badge: unreadNotifs },
+    { id: "profile", label: "Profile", icon: UserRound },
   ];
 
   return (
@@ -259,6 +262,14 @@ const DriverDashboard = () => {
           </div>
 
           {/* Tab Content */}
+          {activeTab === "profile" && driver && (
+            <DriverProfile
+              driver={driver}
+              onProfileChange={(updates) =>
+                setDriver((current) => current ? { ...current, ...updates } : current)
+              }
+            />
+          )}
           {activeTab === "propose" && driver && <DriverTripProposals driverId={driver.id} />}
           {activeTab === "trips" && (
             <div className="space-y-4">

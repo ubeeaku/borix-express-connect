@@ -65,6 +65,64 @@ async function findAuthUserByEmail(
   }
 }
 
+async function publishApplicationProfilePhoto(
+  supabaseAdmin: ReturnType<typeof createClient>,
+  application: { profile_photo_url?: string | null },
+  driverId: string,
+  userId: string,
+) {
+  const sourcePath = application.profile_photo_url?.trim();
+  if (!sourcePath) return;
+
+  const [applicationFolder, applicationIdFolder, fileName, ...extra] = sourcePath.split("/");
+  if (
+    applicationFolder !== "applications" ||
+    !/^[0-9a-f-]{36}$/i.test(applicationIdFolder ?? "") ||
+    extra.length > 0 ||
+    !/^[A-Za-z0-9_-]+\.(jpg|jpeg|png|webp)$/i.test(fileName ?? "")
+  ) {
+    throw new Error("The application profile photo path is invalid.");
+  }
+
+  const extension = fileName.split(".").pop()?.toLowerCase();
+  const contentType = extension === "jpg" || extension === "jpeg"
+    ? "image/jpeg"
+    : extension === "png"
+      ? "image/png"
+      : "image/webp";
+
+  const { data: photo, error: downloadError } = await supabaseAdmin.storage
+    .from("driver-documents")
+    .download(sourcePath);
+  if (downloadError || !photo) {
+    throw new Error(`Unable to read the application profile photo: ${downloadError?.message ?? "File not found"}`);
+  }
+
+  const destinationPath = `drivers/${userId}/${crypto.randomUUID()}.${extension}`;
+  const { error: uploadError } = await supabaseAdmin.storage
+    .from("driver-profile-photos")
+    .upload(destinationPath, photo, {
+      upsert: false,
+      contentType,
+      cacheControl: "3600",
+    });
+  if (uploadError) {
+    throw new Error(`Unable to publish the approved profile photo: ${uploadError.message}`);
+  }
+
+  const publicUrl = supabaseAdmin.storage
+    .from("driver-profile-photos")
+    .getPublicUrl(destinationPath).data.publicUrl;
+  const { error: updateError } = await supabaseAdmin
+    .from("drivers")
+    .update({ profile_photo_url: publicUrl })
+    .eq("id", driverId)
+    .eq("user_id", userId);
+  if (updateError) {
+    throw new Error(`Unable to save the approved profile photo: ${updateError.message}`);
+  }
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", {
@@ -507,6 +565,10 @@ Deno.serve(async (req) => {
         );
       }
 
+      await publishApplicationProfilePhoto(
+        supabaseAdmin, application, updatedDriver.id, existingUserId,
+      );
+
       // -------------------------------------------------------
       // Approve application
       // -------------------------------------------------------
@@ -786,6 +848,10 @@ Deno.serve(async (req) => {
         driverId = newDriver.id;
       }
 
+      await publishApplicationProfilePhoto(
+        supabaseAdmin, application, driverId, existingUserId,
+      );
+
       // -------------------------------------------------------
       // Approve application
       // -------------------------------------------------------
@@ -1037,6 +1103,10 @@ Deno.serve(async (req) => {
 
       driverId = newDriver.id;
     }
+
+    await publishApplicationProfilePhoto(
+      supabaseAdmin, application, driverId, userId,
+    );
 
     // ---------------------------------------------------------
     // Approve application

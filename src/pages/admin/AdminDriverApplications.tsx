@@ -76,6 +76,7 @@ type Application = {
   drivers_license_url: string | null;
   nin_url: string | null;
   passport_photo_url: string | null;
+  profile_photo_url: string | null;
   vehicle_papers_url: string | null;
   roadworthiness_url: string | null;
   status: ApplicationStatus;
@@ -967,6 +968,10 @@ const AdminDriverApplications = () => {
                       {
                         label: "Passport Photo",
                         url: selectedApp.passport_photo_url,
+                      },
+                      {
+                        label: "Passenger Profile Photo",
+                        url: selectedApp.profile_photo_url,
                       },
                       {
                         label: "Vehicle Papers",
