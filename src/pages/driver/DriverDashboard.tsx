@@ -1,16 +1,16 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import {
-  Car, MapPin, DollarSign, Calendar, Bell, Phone, LogOut, Clock, Users,
+  Car, MapPin, DollarSign, Calendar, Bell, Phone, LogOut, Clock,
   CheckCircle, XCircle, TrendingUp, Loader2, Menu, X
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
-import { apiUrl } from "@/lib/apiBase";
 import { toast } from "@/hooks/use-toast";
 import borixLogo from "@/assets/borix-logo-white.png";
+import DriverTripProposals from "@/components/driver/DriverTripProposals";
 
 type Driver = {
   id: string;
@@ -26,14 +26,6 @@ type Trip = {
   departure_time: string;
   status: string;
   earnings: number;
-  route: { origin: string; destination: string } | null;
-};
-
-type DriverDeparture = {
-  id: string;
-  travel_date: string;
-  departure_time: string;
-  status: string;
   route: { origin: string; destination: string } | null;
 };
 
@@ -55,33 +47,15 @@ type Notification = {
   created_at: string;
 };
 
-type PassengerBooking = {
-  id: string;
-  booking_reference: string;
-  passenger_name: string;
-  passenger_phone: string;
-  travel_date: string;
-  departure_time: string;
-  number_of_seats: number;
-  total_amount: number;
-  seats: number[];
-  route: { origin: string; destination: string } | null;
-  departure_status: string | null;
-};
-
 const DriverDashboard = () => {
   const navigate = useNavigate();
   const [driver, setDriver] = useState<Driver | null>(null);
   const [trips, setTrips] = useState<Trip[]>([]);
-  const [driverDepartures, setDriverDepartures] = useState<DriverDeparture[]>([]);
   const [earnings, setEarnings] = useState<Earning[]>([]);
   const [notifications, setNotifications] = useState<Notification[]>([]);
-  const [passengerBookings, setPassengerBookings] = useState<PassengerBooking[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("trips");
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const seenNotificationIds = useRef<Set<string>>(new Set());
-  const notificationsInitialized = useRef(false);
 
   useEffect(() => {
     checkDriverAuth();
@@ -94,20 +68,13 @@ const DriverDashboard = () => {
       return;
     }
 
-    // Check the driver's own role directly. The public has_role RPC is
-    // restricted to service_role in production, while users can read their
-    // own user_roles row under RLS.
-    const { data: driverRole, error: roleError } = await supabase
-      .from('user_roles')
-      .select('id')
-      .eq('user_id', session.user.id)
-      .eq('role', 'driver')
-      .maybeSingle();
+    // Check driver role
+    const { data: hasRole } = await supabase.rpc('has_role', {
+      _user_id: session.user.id,
+      _role: 'driver',
+    });
 
-    if (roleError || !driverRole) {
-      if (roleError) {
-        console.error('Failed to verify driver role:', roleError);
-      }
+    if (!hasRole) {
       navigate("/driver/login");
       return;
     }
@@ -131,20 +98,12 @@ const DriverDashboard = () => {
   };
 
   const fetchData = async (driverId: string) => {
-    const [sessionRes, tripsRes, departuresRes, earningsRes, notifRes] = await Promise.all([
-      supabase.auth.getSession(),
+    const [tripsRes, earningsRes, notifRes] = await Promise.all([
       supabase
         .from('driver_trips')
         .select('*, route:routes(origin, destination)')
         .eq('driver_id', driverId)
         .order('trip_date', { ascending: false })
-        .limit(20),
-      supabase
-        .from('departures')
-        .select('id, travel_date, departure_time, status, route:routes(origin, destination)')
-        .eq('driver_id', driverId)
-        .order('travel_date', { ascending: false })
-        .order('departure_time', { ascending: false })
         .limit(20),
       supabase
         .from('driver_earnings')
@@ -161,65 +120,9 @@ const DriverDashboard = () => {
     ]);
 
     if (tripsRes.data) setTrips(tripsRes.data as any);
-    if (departuresRes.error) {
-      console.error('Failed to load driver departures:', departuresRes.error);
-    } else {
-      setDriverDepartures((departuresRes.data ?? []) as unknown as DriverDeparture[]);
-    }
     if (earningsRes.data) setEarnings(earningsRes.data as Earning[]);
-    if (notifRes.data) {
-      const nextNotifications = notifRes.data as Notification[];
-      const newBookingNotification = notificationsInitialized.current
-        ? nextNotifications.find(
-            (notification) =>
-              notification.type === 'booking' &&
-              !seenNotificationIds.current.has(notification.id)
-          )
-        : null;
-
-      if (newBookingNotification) {
-        toast({
-          title: newBookingNotification.title,
-          description: newBookingNotification.message,
-        });
-      }
-
-      seenNotificationIds.current = new Set(
-        nextNotifications.map((notification) => notification.id)
-      );
-      notificationsInitialized.current = true;
-      setNotifications(nextNotifications);
-    }
-
-    const accessToken = sessionRes.data.session?.access_token;
-    if (accessToken) {
-      try {
-        const response = await fetch(apiUrl('/api/driver/bookings'), {
-          headers: { Authorization: `Bearer ${accessToken}` },
-        });
-        const result = await response.json();
-        if (!response.ok || !result?.success) {
-          throw new Error(result?.error || 'Could not load passenger bookings');
-        }
-        setPassengerBookings(result.bookings as PassengerBooking[]);
-      } catch (error) {
-        console.error('Failed to load passenger bookings:', error);
-      }
-    }
+    if (notifRes.data) setNotifications(notifRes.data as Notification[]);
   };
-
-  useEffect(() => {
-    if (!driver?.id) return;
-
-    const refresh = () => { void fetchData(driver.id); };
-    const interval = window.setInterval(refresh, 15000);
-    window.addEventListener('focus', refresh);
-
-    return () => {
-      window.clearInterval(interval);
-      window.removeEventListener('focus', refresh);
-    };
-  }, [driver?.id]);
 
   const handleTripAction = async (tripId: string, action: 'accepted' | 'declined') => {
     const { error } = await supabase
@@ -258,19 +161,12 @@ const DriverDashboard = () => {
 
   const totalEarnings = earnings.reduce((s, e) => s + e.amount, 0);
   const pendingPay = earnings.filter(e => !e.paid).reduce((s, e) => s + e.amount, 0);
-  const completedTrips = trips.filter(t => t.status === 'completed').length +
-    driverDepartures.filter((departure) => departure.status === 'completed').length;
-  const assignedTripCount = trips.filter(t => t.status === 'assigned').length +
-        driverDepartures.filter((departure) => ['scheduled', 'boarding', 'in_transit'].includes(departure.status)).length;
+  const completedTrips = trips.filter(t => t.status === 'completed').length;
   const unreadNotifs = notifications.filter(n => !n.read).length;
-  const confirmedPassengerCount = passengerBookings.reduce(
-    (count, booking) => count + booking.number_of_seats,
-    0
-  );
 
   const tabs = [
     { id: "trips", label: "My Trips", icon: MapPin },
-    { id: "passengers", label: "Passengers", icon: Users, badge: confirmedPassengerCount },
+    { id: "propose", label: "Propose Trip", icon: Car },
     { id: "earnings", label: "Earnings", icon: DollarSign },
     { id: "notifications", label: "Notifications", icon: Bell, badge: unreadNotifs },
   ];
@@ -344,7 +240,7 @@ const DriverDashboard = () => {
               { label: "Completed Trips", value: completedTrips, icon: CheckCircle },
               { label: "Total Earnings", value: `₦${totalEarnings.toLocaleString()}`, icon: TrendingUp },
               { label: "Pending Pay", value: `₦${pendingPay.toLocaleString()}`, icon: DollarSign },
-              { label: "Assigned Trips", value: assignedTripCount, icon: Calendar },
+              { label: "Assigned Trips", value: trips.filter(t => t.status === 'assigned').length, icon: Calendar },
             ].map((stat, i) => (
               <motion.div key={i} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.1 }} className="bg-card rounded-2xl p-5 shadow-sm">
                 <div className="w-10 h-10 rounded-xl bg-accent/10 flex items-center justify-center mb-3">
@@ -357,12 +253,13 @@ const DriverDashboard = () => {
           </div>
 
           {/* Tab Content */}
+          {activeTab === "propose" && driver && <DriverTripProposals driverId={driver.id} />}
           {activeTab === "trips" && (
             <div className="space-y-4">
               <h2 className="text-lg font-bold text-foreground">Your Trips</h2>
-              {trips.length === 0 && driverDepartures.length === 0 ? (
+              {trips.length === 0 ? (
                 <div className="bg-card rounded-xl p-10 text-center text-muted-foreground">No trips assigned yet.</div>
-              ) : trips.length > 0 && (
+              ) : (
                 trips.map((trip) => (
                   <motion.div key={trip.id} initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="bg-card rounded-xl p-5 border border-border">
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -399,74 +296,6 @@ const DriverDashboard = () => {
                     {trip.earnings > 0 && (
                       <p className="text-sm text-accent font-semibold mt-2">Earnings: ₦{trip.earnings.toLocaleString()}</p>
                     )}
-                  </motion.div>
-                ))
-              )}
-
-              {driverDepartures.length > 0 && (
-                <div className="space-y-4 pt-2">
-                  <h3 className="text-base font-semibold text-foreground">Assigned Departures</h3>
-                  {driverDepartures.map((departure) => (
-                    <motion.div key={departure.id} initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="bg-card rounded-xl p-5 border border-border">
-                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                        <div>
-                          <p className="font-bold text-foreground">
-                            {departure.route ? `${departure.route.origin} → ${departure.route.destination}` : "Route details unavailable"}
-                          </p>
-                          <div className="flex items-center gap-4 text-sm text-muted-foreground mt-1">
-                            <span className="flex items-center gap-1"><Calendar className="w-4 h-4" /> {departure.travel_date}</span>
-                            <span className="flex items-center gap-1"><Clock className="w-4 h-4" /> {departure.departure_time}</span>
-                          </div>
-                        </div>
-                        <Badge className={departure.status === 'completed' ? "bg-green-100 text-green-700" : departure.status === 'cancelled' ? "bg-red-100 text-red-700" : "bg-blue-100 text-blue-700"}>
-                          {departure.status}
-                        </Badge>
-                      </div>
-                    </motion.div>
-                  ))}
-                </div>
-              )}
-            </div>
-          )}
-
-          {activeTab === "passengers" && (
-            <div className="space-y-4">
-              <div className="flex items-center justify-between gap-3">
-                <div>
-                  <h2 className="text-lg font-bold text-foreground">Passenger Bookings</h2>
-                  <p className="text-sm text-muted-foreground">Confirmed passengers for your departures</p>
-                </div>
-                <Badge variant="secondary">{confirmedPassengerCount} seat{confirmedPassengerCount === 1 ? "" : "s"}</Badge>
-              </div>
-              {passengerBookings.length === 0 ? (
-                <div className="bg-card rounded-xl p-10 text-center text-muted-foreground">
-                  No confirmed passenger bookings yet. New bookings for your departures will appear here.
-                </div>
-              ) : (
-                passengerBookings.map((booking) => (
-                  <motion.div key={booking.id} initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="bg-card rounded-xl p-5 border border-border">
-                    <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
-                      <div>
-                        <p className="font-bold text-foreground">
-                          {booking.route ? `${booking.route.origin} → ${booking.route.destination}` : "Passenger booking"}
-                        </p>
-                        <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-muted-foreground mt-1">
-                          <span className="flex items-center gap-1"><Calendar className="w-4 h-4" /> {booking.travel_date}</span>
-                          <span className="flex items-center gap-1"><Clock className="w-4 h-4" /> {booking.departure_time}</span>
-                        </div>
-                      </div>
-                      <Badge className="bg-green-100 text-green-700">Confirmed</Badge>
-                    </div>
-                    <div className="mt-4 grid sm:grid-cols-2 gap-3 text-sm">
-                      <div>
-                        <p className="font-semibold text-foreground">{booking.passenger_name}</p>
-                        <a href={`tel:${booking.passenger_phone}`} className="text-accent hover:underline">{booking.passenger_phone}</a>
-                      </div>
-                      <div className="text-muted-foreground">
-                        <p>{booking.number_of_seats} seat{booking.number_of_seats === 1 ? "" : "s"}{booking.seats.length ? ` · Seat${booking.seats.length === 1 ? "" : "s"} ${booking.seats.join(", ")}` : ""}</p>
-                        <p>₦{booking.total_amount.toLocaleString()} · {booking.booking_reference}</p>
-                      </div>
-                    </div>
                   </motion.div>
                 ))
               )}

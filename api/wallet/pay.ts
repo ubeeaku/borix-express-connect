@@ -1,10 +1,8 @@
-import type { VercelRequest, VercelResponse } from '@vercel/node';
-
 import {
   SUPABASE_SERVICE_ROLE_KEY,
   SUPABASE_URL,
   adminClient,
-  applyCors,
+  corsHeaders,
   generateReference,
   getUserFromRequest,
   json,
@@ -14,30 +12,31 @@ import {
 
 export const config = { runtime: 'nodejs' };
 
-export default async function handler(req: VercelRequest, res: VercelResponse) {
-  if (req.method === 'OPTIONS') {
-    applyCors(req, res);
-    return res.status(204).end();
-  }
-  if (req.method !== 'POST') return json(req, res, 405, { success: false, error: 'Method not allowed' });
+export default async function handler(req: Request) {
+  if (req.method === 'OPTIONS') return new Response(null, { headers: corsHeaders(req) });
+  if (req.method !== 'POST') return json(req, 405, { success: false, error: 'Method not allowed' });
 
   if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
-    return json(req, res, 503, { success: false, error: 'Payment service unavailable' });
+    return json(req, 503, { success: false, error: 'Payment service unavailable' });
   }
 
   const user = await getUserFromRequest(req);
-  if (!user) return json(req, res, 401, { success: false, error: 'Authentication required' });
+  if (!user) return json(req, 401, { success: false, error: 'Authentication required' });
 
-  const body = req.body;
-  if (!body) return json(req, res, 400, { success: false, error: 'Invalid JSON' });
+  let body: any;
+  try {
+    body = await req.json();
+  } catch {
+    return json(req, 400, { success: false, error: 'Invalid JSON' });
+  }
 
   const input = validateBookingInput(body);
-  if (!input) return json(req, res, 400, { success: false, error: 'Invalid input data' });
+  if (!input) return json(req, 400, { success: false, error: 'Invalid input data' });
 
   const supabase = adminClient();
   const prep = await prepareDeparture(supabase, input.departureId, input.seats, input.passengers);
   if ('error' in prep && prep.error) {
-    return json(req, res, prep.error.status, { success: false, error: prep.error.message });
+    return json(req, prep.error.status, { success: false, error: prep.error.message });
   }
   const { departure, passengersInt, amount, commission, driverAmount } = prep as any;
 
@@ -47,12 +46,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     .eq('user_id', user.id)
     .maybeSingle();
   if (walletErr || !wallet) {
-    return json(req, res, 404, { success: false, error: 'Wallet not found. Please contact support.' });
+    return json(req, 404, { success: false, error: 'Wallet not found. Please contact support.' });
   }
 
   const amountInKobo = Math.round(amount * 100);
   if (wallet.balance < amountInKobo) {
-    return json(req, res, 400, {
+    return json(req, 400, {
       success: false,
       error: 'Insufficient wallet balance',
       walletBalance: wallet.balance / 100,
@@ -84,7 +83,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     .select('id')
     .single();
   if (bookingErr || !bookingData) {
-    return json(req, res, 500, { success: false, error: 'Unable to process booking' });
+    return json(req, 500, { success: false, error: 'Unable to process booking' });
   }
 
   const seatRecords = input.seats.map((s) => ({
@@ -98,7 +97,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const { error: seatErr } = await supabase.from('booked_seats').insert(seatRecords);
   if (seatErr) {
     await supabase.from('bookings').delete().eq('id', bookingData.id);
-    return json(req, res, 409, { success: false, error: 'Selected seats are no longer available' });
+    return json(req, 409, { success: false, error: 'Selected seats are no longer available' });
   }
 
   const newBalance = wallet.balance - amountInKobo;
@@ -109,7 +108,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (walletUpdErr) {
     await supabase.from('booked_seats').delete().eq('booking_id', bookingData.id);
     await supabase.from('bookings').delete().eq('id', bookingData.id);
-    return json(req, res, 500, { success: false, error: 'Payment processing failed' });
+    return json(req, 500, { success: false, error: 'Payment processing failed' });
   }
 
   await supabase.from('wallet_transactions').insert({
@@ -120,7 +119,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     booking_reference: reference,
   });
 
-  return json(req, res, 200, {
+  return json(req, 200, {
     success: true,
     reference,
     message: 'Booking confirmed',

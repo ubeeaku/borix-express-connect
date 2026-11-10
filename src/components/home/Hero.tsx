@@ -1,6 +1,6 @@
 import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
-import { ArrowRight, Shield, Clock, Star, MapPin, Tag } from "lucide-react";
+import { ArrowRight, Shield, Clock, Star, Users, MapPin, TrendingUp, Tag } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import heroBus from "@/assets/hero-bus.jpg.asset.json";
 import { useMinRoutePrice } from "@/hooks/useMinRoutePrice";
@@ -42,7 +42,7 @@ export const Hero = () => {
             >
               <Star className="w-4 h-4 text-accent" />
               <span className="text-white/90 text-sm font-medium">
-                Jos ↔ Abuja intercity service
+                Nigeria's #1 Intercity Transport
               </span>
             </motion.div>
 
@@ -53,7 +53,7 @@ export const Hero = () => {
               className="text-4xl md:text-5xl lg:text-6xl font-extrabold text-white leading-tight mb-4"
             >
               Reliable Intercity{" "}
-              <span className="text-accent">Transport</span> Between Jos and Abuja
+              <span className="text-accent">Transport</span> Across Nigeria
             </motion.h1>
 
             <motion.p
@@ -97,24 +97,24 @@ export const Hero = () => {
               </Link>
             </motion.div>
 
-            {/* Route count */}
+            {/* Stats */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.6 }}
-              className="mt-12 max-w-xs mx-auto lg:mx-0"
+              className="grid grid-cols-3 gap-2 mt-12 pt-8 border-t border-white/10 divide-x divide-white/10"
             >
-              <div
-                aria-hidden="true"
-                className="h-0.5 w-16 mx-auto lg:mx-0 rounded-full bg-accent/70 mb-5"
-              />
-              <div className="flex items-center justify-center lg:justify-start gap-3">
-                <MapPin aria-hidden="true" className="w-6 h-6 shrink-0 text-accent" />
-                <div className="flex items-baseline gap-2">
-                  <p className="text-3xl md:text-4xl font-bold text-accent leading-none">2+</p>
-                  <p className="text-sm md:text-base font-medium text-white/75">Routes</p>
+              {[
+                { icon: Users, value: "50K+", label: "Happy Customers" },
+                { icon: MapPin, value: "20+", label: "Routes" },
+                { icon: TrendingUp, value: "99%", label: "On-time Rate" },
+              ].map((stat, index) => (
+                <div key={index} className="px-2 text-center lg:text-left first:pl-0">
+                  <stat.icon className="w-5 h-5 text-accent mb-1 mx-auto lg:mx-0" />
+                  <p className="text-2xl md:text-3xl font-bold text-accent leading-none">{stat.value}</p>
+                  <p className="text-xs md:text-sm text-white/60 mt-1">{stat.label}</p>
                 </div>
-              </div>
+              ))}
             </motion.div>
           </motion.div>
 
@@ -149,8 +149,8 @@ export const Hero = () => {
                     <Shield className="w-6 h-6 text-green-600" />
                   </div>
                   <div>
-                    <p className="font-bold text-foreground">Driver details</p>
-                    <p className="text-sm text-muted-foreground">Shown before you book</p>
+                    <p className="font-bold text-foreground">100% Safe</p>
+                    <p className="text-sm text-muted-foreground">Verified drivers</p>
                   </div>
                 </div>
               </motion.div>
@@ -165,8 +165,8 @@ export const Hero = () => {
                     <Clock className="w-6 h-6 text-accent" />
                   </div>
                   <div>
-                    <p className="font-bold text-foreground">Live departures</p>
-                    <p className="text-sm text-muted-foreground">Check your travel date</p>
+                    <p className="font-bold text-foreground">On Time</p>
+                    <p className="text-sm text-muted-foreground">Always punctual</p>
                   </div>
                 </div>
               </motion.div>

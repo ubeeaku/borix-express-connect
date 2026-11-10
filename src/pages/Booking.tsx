@@ -18,7 +18,7 @@ import { VehicleSeatPicker } from "@/components/booking/VehicleSeatPicker";
 import { DeparturesList } from "@/components/booking/DeparturesList";
 import type { DepartureInfo } from "@/components/booking/DepartureCard";
 import { z } from "zod";
-import { addCalendarDays, getLagosDateString, isDepartureUpcoming } from "@/lib/dateTime";
+import { getNigeriaTodayString, getNigeriaTomorrowString } from "@/lib/nigeriaTime";
 
 const passengerSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters").max(100),
@@ -38,8 +38,8 @@ const steps = [
   { id: 5, name: "Payment", icon: CreditCard },
 ];
 
-const todayStr = () => getLagosDateString();
-const tomorrowStr = () => addCalendarDays(todayStr(), 1);
+const todayStr = () => getNigeriaTodayString();
+const tomorrowStr = () => getNigeriaTomorrowString();
 
 const Booking = () => {
   const [searchParams] = useSearchParams();
@@ -87,14 +87,6 @@ const Booking = () => {
   };
 
   const handleSelectDeparture = (dep: DepartureInfo) => {
-    if (!isDepartureUpcoming(dep.travel_date, dep.departure_time)) {
-      toast({
-        title: "Departure has passed",
-        description: "Choose an upcoming departure to continue.",
-        variant: "destructive",
-      });
-      return;
-    }
     setSelectedDeparture(dep);
     setCurrentStep(3);
   };
@@ -111,12 +103,6 @@ const Booking = () => {
       }
     }
     if (currentStep === 3) {
-      if (selectedDeparture && !isDepartureUpcoming(selectedDeparture.travel_date, selectedDeparture.departure_time)) {
-        toast({ title: "Departure has passed", description: "Choose an upcoming departure to continue.", variant: "destructive" });
-        setSelectedDeparture(null);
-        setCurrentStep(2);
-        return;
-      }
       const required = parseInt(formData.passengers);
       if (selectedSeats.length !== required) {
         toast({ title: "Select your seats", description: `Please select ${required} seat${required > 1 ? "s" : ""}.`, variant: "destructive" });
@@ -124,12 +110,6 @@ const Booking = () => {
       }
     }
     if (currentStep === 4) {
-      if (selectedDeparture && !isDepartureUpcoming(selectedDeparture.travel_date, selectedDeparture.departure_time)) {
-        toast({ title: "Departure has passed", description: "Choose an upcoming departure to continue.", variant: "destructive" });
-        setSelectedDeparture(null);
-        setCurrentStep(2);
-        return;
-      }
       const result = passengerSchema.safeParse(formData);
       if (!result.success) {
         toast({ title: "Invalid input", description: result.error.errors[0]?.message, variant: "destructive" });
@@ -146,16 +126,6 @@ const Booking = () => {
 
   const handlePayment = async () => {
     if (!selectedDeparture) return;
-    if (!isDepartureUpcoming(selectedDeparture.travel_date, selectedDeparture.departure_time)) {
-      toast({
-        title: "Departure has passed",
-        description: "Choose an upcoming departure before making a payment.",
-        variant: "destructive",
-      });
-      setCurrentStep(2);
-      setSelectedDeparture(null);
-      return;
-    }
     const baseParams = {
       email: formData.email,
       amount: totalPrice,
@@ -455,11 +425,11 @@ const Booking = () => {
                   <div className="pt-3 border-t border-border">
                     <div className="flex justify-between mb-1">
                       <span className="text-muted-foreground">Per seat</span>
-                      <span>{selectedDeparture ? `₦${selectedDeparture.price.toLocaleString()}` : "Select a departure"}</span>
+                      <span>₦{(selectedDeparture?.price ?? 0).toLocaleString()}</span>
                     </div>
                     <div className="flex justify-between text-lg font-bold">
                       <span>Total</span>
-                      <span className="text-accent">{selectedDeparture ? `₦${totalPrice.toLocaleString()}` : "—"}</span>
+                      <span className="text-accent">₦{totalPrice.toLocaleString()}</span>
                     </div>
                   </div>
                 </div>

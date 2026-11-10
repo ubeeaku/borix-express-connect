@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import { format } from "date-fns";
 import { AdminLayout } from "@/components/admin/AdminLayout";
+import DriverTripProposalQueue from "@/components/admin/DriverTripProposalQueue";
 import { useAdminAuth } from "@/hooks/useAdminAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -133,7 +134,7 @@ const AdminTrips = () => {
       routesResult,
       parksResult,
       driversResult,
-      applicationsResult,
+      vehiclesResult,
     ] = await Promise.all([
       supabase
         .from("routes")
@@ -153,10 +154,9 @@ const AdminTrips = () => {
         .order("full_name"),
 
       supabase
-        .from("driver_applications")
-        .select(
-          "id, vehicle_type, vehicle_model, vehicle_year, vehicle_plate_number, vehicle_color, vehicle_capacity"
-        ),
+        .from("vehicles")
+        .select("id, driver_id, vehicle_type, year, plate_number, color, capacity, status")
+        .eq("status", "active"),
     ]);
 
     if (routesResult.error) {
@@ -191,36 +191,18 @@ const AdminTrips = () => {
       return;
     }
 
-    if (applicationsResult.error) {
-      console.error(applicationsResult.error);
-      toast({
-        title: "Failed to load driver vehicles",
-        description: applicationsResult.error.message,
-        variant: "destructive",
-      });
+    if (vehiclesResult.error) {
+      console.error(vehiclesResult.error);
+      toast({ title: "Failed to load registered vehicles", description: vehiclesResult.error.message, variant: "destructive" });
       return;
     }
 
-    const applicationsById = new Map<
-      string,
-      DriverApplicationVehicle
-    >();
-
-    (applicationsResult.data ?? []).forEach((application) => {
-      applicationsById.set(application.id, {
-        vehicle_type: application.vehicle_type ?? null,
-        vehicle_model: application.vehicle_model ?? null,
-        vehicle_year:
-          application.vehicle_year !== null
-            ? Number(application.vehicle_year)
-            : null,
-        vehicle_plate_number:
-          application.vehicle_plate_number ?? null,
-        vehicle_color: application.vehicle_color ?? null,
-        vehicle_capacity:
-          application.vehicle_capacity !== null
-            ? Number(application.vehicle_capacity)
-            : null,
+    const vehiclesByDriver = new Map<string, DriverApplicationVehicle & { id: string }>();
+    (vehiclesResult.data ?? []).forEach((vehicle) => {
+      if (!vehiclesByDriver.has(vehicle.driver_id)) vehiclesByDriver.set(vehicle.driver_id, {
+        id: vehicle.id, vehicle_type: vehicle.vehicle_type, vehicle_model: null,
+        vehicle_year: vehicle.year, vehicle_plate_number: vehicle.plate_number,
+        vehicle_color: vehicle.color, vehicle_capacity: vehicle.capacity,
       });
     });
 
@@ -233,9 +215,7 @@ const AdminTrips = () => {
       park_id: driver.park_id ?? null,
       status: driver.status,
       application_id: driver.application_id ?? null,
-      applicationVehicle: driver.application_id
-        ? applicationsById.get(driver.application_id) ?? null
-        : null,
+      applicationVehicle: vehiclesByDriver.get(driver.id) ?? null,
     }));
 
     setDrivers(enrichedDrivers);
@@ -253,12 +233,7 @@ const AdminTrips = () => {
           departure_time,
           total_seats,
           occupied_seats,
-          vehicle_type,
-          vehicle_model,
-          vehicle_year,
-          vehicle_plate_number,
-          vehicle_color,
-          vehicle_capacity,
+          destination_park_id,
           price,
           commission_amount,
           status,
@@ -281,7 +256,8 @@ const AdminTrips = () => {
             park_id,
             status,
             application_id
-          )
+          ),
+          vehicles (vehicle_type, plate_number, year, color, capacity)
         `)
         .eq("travel_date", selectedDate)
         .order("departure_time", { ascending: true });
@@ -331,21 +307,14 @@ const AdminTrips = () => {
           route: row.routes ?? null,
           park: row.parks ?? null,
           driver: row.drivers ?? null,
-          vehicle: {
-            vehicle_type: row.vehicle_type ?? null,
-            vehicle_model: row.vehicle_model ?? null,
-            vehicle_year:
-              row.vehicle_year !== null
-                ? Number(row.vehicle_year)
-                : null,
-            vehicle_plate_number:
-              row.vehicle_plate_number ?? null,
-            vehicle_color: row.vehicle_color ?? null,
-            vehicle_capacity:
-              row.vehicle_capacity !== null
-                ? Number(row.vehicle_capacity)
-                : null,
-          },
+          vehicle: row.vehicles ? {
+            vehicle_type: row.vehicles.vehicle_type ?? null,
+            vehicle_model: null,
+            vehicle_year: row.vehicles.year !== null ? Number(row.vehicles.year) : null,
+            vehicle_plate_number: row.vehicles.plate_number ?? null,
+            vehicle_color: row.vehicles.color ?? null,
+            vehicle_capacity: row.vehicles.capacity !== null ? Number(row.vehicles.capacity) : null,
+          } : null,
           bookedSeats: counts[row.id] ?? 0,
         }))
       );
@@ -599,15 +568,7 @@ const AdminTrips = () => {
 
         // New trips use the vehicle registered in the driver's
         // approved application. No separate vehicles table is required.
-        vehicle_id: null,
-
-        vehicle_type: vehicle.vehicle_type,
-        vehicle_model: vehicle.vehicle_model,
-        vehicle_year: vehicle.vehicle_year,
-        vehicle_plate_number:
-          vehicle.vehicle_plate_number.toUpperCase(),
-        vehicle_color: vehicle.vehicle_color,
-        vehicle_capacity: capacity,
+        vehicle_id: (vehicle as DriverApplicationVehicle & { id: string }).id,
 
         // Seats already occupied before Borix bookings.
         occupied_seats: occupied,
@@ -733,6 +694,7 @@ const AdminTrips = () => {
       title="Trips"
       subtitle="Create and manage real scheduled departures"
     >
+      <DriverTripProposalQueue />
       <div className="space-y-6">
         {/* Header */}
         <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-4">

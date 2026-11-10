@@ -1,4 +1,29 @@
-/** Convert a Nigeria-local departure date and time into a UTC timestamp. */
+/** Return the current calendar date in the departure timezone. */
+export function getNigeriaTodayString(now = new Date()): string {
+  const parts = new Intl.DateTimeFormat("en", {
+    timeZone: "Africa/Lagos",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).formatToParts(now);
+  const values = Object.fromEntries(parts.map(({ type, value }) => [type, value]));
+
+  return `${values.year}-${values.month}-${values.day}`;
+}
+
+/** Return tomorrow in the departure timezone, independent of host timezone. */
+export function getNigeriaTomorrowString(now = new Date()): string {
+  const [year, month, day] = getNigeriaTodayString(now).split("-").map(Number);
+  const tomorrow = new Date(Date.UTC(year, month - 1, day + 1));
+
+  return `${tomorrow.getUTCFullYear()}-${String(tomorrow.getUTCMonth() + 1).padStart(2, "0")}-${String(tomorrow.getUTCDate()).padStart(2, "0")}`;
+}
+
+/**
+ * Convert a local Nigeria departure date/time into a UTC timestamp.
+ * Departures are scheduled in Nigeria (Africa/Lagos), regardless of the
+ * timezone used by the browser or API host.
+ */
 export function parseNigeriaDepartureTimestamp(
   travelDate: string,
   departureTime: string

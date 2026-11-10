@@ -10,7 +10,7 @@ export type Database = {
   // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
-    PostgrestVersion: "14.1"
+    PostgrestVersion: "14.5"
   }
   public: {
     Tables: {
@@ -61,6 +61,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "booked_seats_departure_id_fkey"
+            columns: ["departure_id"]
+            isOneToOne: false
+            referencedRelation: "public_departures"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "booked_seats_route_id_fkey"
             columns: ["route_id"]
             isOneToOne: false
@@ -76,6 +83,7 @@ export type Database = {
           departure_id: string | null
           departure_time: string
           driver_amount: number | null
+          expires_at: string | null
           id: string
           next_of_kin_name: string | null
           next_of_kin_phone: string | null
@@ -95,6 +103,7 @@ export type Database = {
           departure_id?: string | null
           departure_time: string
           driver_amount?: number | null
+          expires_at?: string | null
           id?: string
           next_of_kin_name?: string | null
           next_of_kin_phone?: string | null
@@ -114,6 +123,7 @@ export type Database = {
           departure_id?: string | null
           departure_time?: string
           driver_amount?: number | null
+          expires_at?: string | null
           id?: string
           next_of_kin_name?: string | null
           next_of_kin_phone?: string | null
@@ -136,6 +146,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "bookings_departure_id_fkey"
+            columns: ["departure_id"]
+            isOneToOne: false
+            referencedRelation: "public_departures"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "bookings_route_id_fkey"
             columns: ["route_id"]
             isOneToOne: false
@@ -149,8 +166,10 @@ export type Database = {
           commission_amount: number
           created_at: string
           departure_time: string
+          destination_park_id: string | null
           driver_id: string
           id: string
+          occupied_seats: number
           park_id: string
           price: number
           route_id: string
@@ -158,14 +177,22 @@ export type Database = {
           total_seats: number
           travel_date: string
           updated_at: string
-          vehicle_id: string
+          vehicle_capacity: number | null
+          vehicle_color: string | null
+          vehicle_id: string | null
+          vehicle_model: string | null
+          vehicle_plate_number: string | null
+          vehicle_type: string | null
+          vehicle_year: number | null
         }
         Insert: {
           commission_amount?: number
           created_at?: string
           departure_time: string
+          destination_park_id?: string | null
           driver_id: string
           id?: string
+          occupied_seats?: number
           park_id: string
           price: number
           route_id: string
@@ -173,14 +200,22 @@ export type Database = {
           total_seats: number
           travel_date: string
           updated_at?: string
-          vehicle_id: string
+          vehicle_capacity?: number | null
+          vehicle_color?: string | null
+          vehicle_id?: string | null
+          vehicle_model?: string | null
+          vehicle_plate_number?: string | null
+          vehicle_type?: string | null
+          vehicle_year?: number | null
         }
         Update: {
           commission_amount?: number
           created_at?: string
           departure_time?: string
+          destination_park_id?: string | null
           driver_id?: string
           id?: string
+          occupied_seats?: number
           park_id?: string
           price?: number
           route_id?: string
@@ -188,14 +223,34 @@ export type Database = {
           total_seats?: number
           travel_date?: string
           updated_at?: string
-          vehicle_id?: string
+          vehicle_capacity?: number | null
+          vehicle_color?: string | null
+          vehicle_id?: string | null
+          vehicle_model?: string | null
+          vehicle_plate_number?: string | null
+          vehicle_type?: string | null
+          vehicle_year?: number | null
         }
         Relationships: [
+          {
+            foreignKeyName: "departures_destination_park_id_fkey"
+            columns: ["destination_park_id"]
+            isOneToOne: false
+            referencedRelation: "parks"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "departures_driver_id_fkey"
             columns: ["driver_id"]
             isOneToOne: false
             referencedRelation: "drivers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "departures_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "public_driver_profiles"
             referencedColumns: ["id"]
           },
           {
@@ -239,22 +294,24 @@ export type Database = {
           guarantor_relationship: string | null
           id: string
           nin_url: string | null
-	  park_id: string | null
+          park_id: string | null
           passport_photo_url: string | null
           phone: string
           roadworthiness_url: string | null
           state: string
           status: Database["public"]["Enums"]["driver_application_status"]
           updated_at: string
-          vehicle_details: string | null
-          vehicle_type: string | null
-          vehicle_model: string | null
-          vehicle_year: number | null
-          vehicle_plate_number: string | null
-          vehicle_color: string | null
           vehicle_capacity: number | null
-          vehicle_ownership: Database["public"]["Enums"]["vehicle_ownership_type"] | null
+          vehicle_color: string | null
+          vehicle_details: string | null
+          vehicle_model: string | null
+          vehicle_ownership:
+            | Database["public"]["Enums"]["vehicle_ownership_type"]
+            | null
           vehicle_papers_url: string | null
+          vehicle_plate_number: string | null
+          vehicle_type: string | null
+          vehicle_year: number | null
           years_experience: number
         }
         Insert: {
@@ -274,22 +331,24 @@ export type Database = {
           guarantor_relationship?: string | null
           id?: string
           nin_url?: string | null
-	  park_id?: string | null
+          park_id?: string | null
           passport_photo_url?: string | null
           phone: string
           roadworthiness_url?: string | null
           state: string
           status?: Database["public"]["Enums"]["driver_application_status"]
           updated_at?: string
-          vehicle_details?: string | null
-          vehicle_type?: string | null
-          vehicle_model?: string | null
-          vehicle_year?: number | null
-          vehicle_plate_number?: string | null
-          vehicle_color?: string | null
           vehicle_capacity?: number | null
-          vehicle_ownership?: Database["public"]["Enums"]["vehicle_ownership_type"] | null
+          vehicle_color?: string | null
+          vehicle_details?: string | null
+          vehicle_model?: string | null
+          vehicle_ownership?:
+            | Database["public"]["Enums"]["vehicle_ownership_type"]
+            | null
           vehicle_papers_url?: string | null
+          vehicle_plate_number?: string | null
+          vehicle_type?: string | null
+          vehicle_year?: number | null
           years_experience?: number
         }
         Update: {
@@ -309,25 +368,35 @@ export type Database = {
           guarantor_relationship?: string | null
           id?: string
           nin_url?: string | null
-	  park_id?: string | null
+          park_id?: string | null
           passport_photo_url?: string | null
           phone?: string
           roadworthiness_url?: string | null
           state?: string
           status?: Database["public"]["Enums"]["driver_application_status"]
           updated_at?: string
-          vehicle_details?: string | null
-          vehicle_type?: string | null
-          vehicle_model?: string | null
-          vehicle_year?: number | null
-          vehicle_plate_number?: string | null
-          vehicle_color?: string | null
           vehicle_capacity?: number | null
-          vehicle_ownership?: Database["public"]["Enums"]["vehicle_ownership_type"] | null
+          vehicle_color?: string | null
+          vehicle_details?: string | null
+          vehicle_model?: string | null
+          vehicle_ownership?:
+            | Database["public"]["Enums"]["vehicle_ownership_type"]
+            | null
           vehicle_papers_url?: string | null
+          vehicle_plate_number?: string | null
+          vehicle_type?: string | null
+          vehicle_year?: number | null
           years_experience?: number
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "driver_applications_park_id_fkey"
+            columns: ["park_id"]
+            isOneToOne: false
+            referencedRelation: "parks"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       driver_earnings: {
         Row: {
@@ -372,6 +441,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "driver_earnings_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "public_driver_profiles"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "driver_earnings_trip_id_fkey"
             columns: ["trip_id"]
             isOneToOne: false
@@ -382,6 +458,7 @@ export type Database = {
       }
       driver_notifications: {
         Row: {
+          booking_id: string | null
           created_at: string
           driver_id: string | null
           id: string
@@ -391,6 +468,7 @@ export type Database = {
           type: string
         }
         Insert: {
+          booking_id?: string | null
           created_at?: string
           driver_id?: string | null
           id?: string
@@ -400,6 +478,7 @@ export type Database = {
           type?: string
         }
         Update: {
+          booking_id?: string | null
           created_at?: string
           driver_id?: string | null
           id?: string
@@ -410,10 +489,141 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "driver_notifications_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "bookings"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "driver_notifications_driver_id_fkey"
             columns: ["driver_id"]
             isOneToOne: false
             referencedRelation: "drivers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "driver_notifications_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "public_driver_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      driver_trip_proposals: {
+        Row: {
+          admin_note: string | null
+          commission_amount: number
+          created_at: string
+          departure_id: string | null
+          departure_park_id: string
+          departure_time: string
+          destination_park_id: string
+          driver_id: string
+          driver_occupied_seats: number
+          fare: number | null
+          id: string
+          reviewed_at: string | null
+          route_id: string
+          status: string
+          travel_date: string
+          vehicle_capacity: number
+          vehicle_id: string
+        }
+        Insert: {
+          admin_note?: string | null
+          commission_amount?: number
+          created_at?: string
+          departure_id?: string | null
+          departure_park_id: string
+          departure_time: string
+          destination_park_id: string
+          driver_id: string
+          driver_occupied_seats: number
+          fare?: number | null
+          id?: string
+          reviewed_at?: string | null
+          route_id: string
+          status?: string
+          travel_date: string
+          vehicle_capacity: number
+          vehicle_id: string
+        }
+        Update: {
+          admin_note?: string | null
+          commission_amount?: number
+          created_at?: string
+          departure_id?: string | null
+          departure_park_id?: string
+          departure_time?: string
+          destination_park_id?: string
+          driver_id?: string
+          driver_occupied_seats?: number
+          fare?: number | null
+          id?: string
+          reviewed_at?: string | null
+          route_id?: string
+          status?: string
+          travel_date?: string
+          vehicle_capacity?: number
+          vehicle_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "driver_trip_proposals_departure_id_fkey"
+            columns: ["departure_id"]
+            isOneToOne: false
+            referencedRelation: "departures"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "driver_trip_proposals_departure_id_fkey"
+            columns: ["departure_id"]
+            isOneToOne: false
+            referencedRelation: "public_departures"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "driver_trip_proposals_departure_park_id_fkey"
+            columns: ["departure_park_id"]
+            isOneToOne: false
+            referencedRelation: "parks"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "driver_trip_proposals_destination_park_id_fkey"
+            columns: ["destination_park_id"]
+            isOneToOne: false
+            referencedRelation: "parks"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "driver_trip_proposals_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "driver_trip_proposals_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "public_driver_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "driver_trip_proposals_route_id_fkey"
+            columns: ["route_id"]
+            isOneToOne: false
+            referencedRelation: "routes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "driver_trip_proposals_vehicle_id_fkey"
+            columns: ["vehicle_id"]
+            isOneToOne: false
+            referencedRelation: "vehicles"
             referencedColumns: ["id"]
           },
         ]
@@ -464,6 +674,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "driver_trips_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "public_driver_profiles"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "driver_trips_route_id_fkey"
             columns: ["route_id"]
             isOneToOne: false
@@ -478,8 +695,8 @@ export type Database = {
           created_at: string
           email: string | null
           full_name: string
-          id: string	
-	  park_id: string | null
+          id: string
+          park_id: string | null
           phone: string
           profile_photo_url: string | null
           rating: number | null
@@ -494,7 +711,7 @@ export type Database = {
           email?: string | null
           full_name: string
           id?: string
-	  park_id?: string | null
+          park_id?: string | null
           phone: string
           profile_photo_url?: string | null
           rating?: number | null
@@ -509,7 +726,7 @@ export type Database = {
           email?: string | null
           full_name?: string
           id?: string
-	  park_id?: string | null
+          park_id?: string | null
           phone?: string
           profile_photo_url?: string | null
           rating?: number | null
@@ -524,6 +741,13 @@ export type Database = {
             columns: ["application_id"]
             isOneToOne: false
             referencedRelation: "driver_applications"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "drivers_park_id_fkey"
+            columns: ["park_id"]
+            isOneToOne: false
+            referencedRelation: "parks"
             referencedColumns: ["id"]
           },
         ]
@@ -639,6 +863,13 @@ export type Database = {
             referencedRelation: "departures"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "seat_holds_departure_id_fkey"
+            columns: ["departure_id"]
+            isOneToOne: false
+            referencedRelation: "public_departures"
+            referencedColumns: ["id"]
+          },
         ]
       }
       user_roles: {
@@ -664,6 +895,7 @@ export type Database = {
       }
       vehicles: {
         Row: {
+          approval_status: string | null
           capacity: number
           color: string | null
           created_at: string
@@ -676,6 +908,7 @@ export type Database = {
           year: number | null
         }
         Insert: {
+          approval_status?: string | null
           capacity: number
           color?: string | null
           created_at?: string
@@ -688,6 +921,7 @@ export type Database = {
           year?: number | null
         }
         Update: {
+          approval_status?: string | null
           capacity?: number
           color?: string | null
           created_at?: string
@@ -705,6 +939,13 @@ export type Database = {
             columns: ["driver_id"]
             isOneToOne: false
             referencedRelation: "drivers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "vehicles_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "public_driver_profiles"
             referencedColumns: ["id"]
           },
         ]
@@ -810,8 +1051,107 @@ export type Database = {
         }
         Relationships: []
       }
+      public_departures: {
+        Row: {
+          commission_amount: number | null
+          departure_time: string | null
+          destination: string | null
+          driver_id: string | null
+          driver_name: string | null
+          driver_profile_photo_url: string | null
+          driver_rating: number | null
+          driver_total_trips: number | null
+          id: string | null
+          occupied_seats: number | null
+          origin: string | null
+          park_address: string | null
+          park_city: string | null
+          park_id: string | null
+          park_name: string | null
+          plate_number: string | null
+          price: number | null
+          route_id: string | null
+          status: string | null
+          total_seats: number | null
+          travel_date: string | null
+          vehicle_capacity: number | null
+          vehicle_color: string | null
+          vehicle_id: string | null
+          vehicle_type: string | null
+          vehicle_year: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "departures_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "departures_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "public_driver_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "departures_park_id_fkey"
+            columns: ["park_id"]
+            isOneToOne: false
+            referencedRelation: "parks"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "departures_route_id_fkey"
+            columns: ["route_id"]
+            isOneToOne: false
+            referencedRelation: "routes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "departures_vehicle_id_fkey"
+            columns: ["vehicle_id"]
+            isOneToOne: false
+            referencedRelation: "vehicles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      public_driver_profiles: {
+        Row: {
+          full_name: string | null
+          id: string | null
+          profile_photo_url: string | null
+          rating: number | null
+          total_trips: number | null
+        }
+        Insert: {
+          full_name?: string | null
+          id?: string | null
+          profile_photo_url?: string | null
+          rating?: number | null
+          total_trips?: number | null
+        }
+        Update: {
+          full_name?: string | null
+          id?: string | null
+          profile_photo_url?: string | null
+          rating?: number | null
+          total_trips?: number | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
+      approve_driver_trip_proposal: {
+        Args: {
+          approved_commission?: number
+          approved_fare: number
+          proposal_id: string
+        }
+        Returns: string
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -844,12 +1184,12 @@ export type Tables<
   DefaultSchemaTableNameOrOptions extends
     | keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
         DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
-    : never = never,
+    : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -873,11 +1213,11 @@ export type TablesInsert<
   DefaultSchemaTableNameOrOptions extends
     | keyof DefaultSchema["Tables"]
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
-    : never = never,
+    : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -898,11 +1238,11 @@ export type TablesUpdate<
   DefaultSchemaTableNameOrOptions extends
     | keyof DefaultSchema["Tables"]
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
-    : never = never,
+    : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -923,11 +1263,11 @@ export type Enums<
   DefaultSchemaEnumNameOrOptions extends
     | keyof DefaultSchema["Enums"]
     | { schema: keyof DatabaseWithoutInternals },
-  EnumName extends DefaultSchemaEnumNameOrOptions extends {
+  EnumName extends (DefaultSchemaEnumNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
-    : never = never,
+    : never) = never,
 > = DefaultSchemaEnumNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -940,11 +1280,11 @@ export type CompositeTypes<
   PublicCompositeTypeNameOrOptions extends
     | keyof DefaultSchema["CompositeTypes"]
     | { schema: keyof DatabaseWithoutInternals },
-  CompositeTypeName extends PublicCompositeTypeNameOrOptions extends {
+  CompositeTypeName extends (PublicCompositeTypeNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
-    : never = never,
+    : never) = never,
 > = PublicCompositeTypeNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }

@@ -10,6 +10,7 @@
     "build:dev": "vite build --mode development",
     "lint": "eslint .",
     "test:departure-time": "node --experimental-strip-types --test tests/departure-time.test.mjs",
+    "test:driver-trip-capacity": "node --experimental-strip-types --test tests/driver-trip-capacity.test.mjs",
     "preview": "vite preview"
   },
   "dependencies": {

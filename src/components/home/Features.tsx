@@ -1,17 +1,18 @@
 import { motion } from "framer-motion";
 import { Shield, Clock, Armchair, CreditCard, MapPin, Headphones, CheckCircle2 } from "lucide-react";
 import busInterior from "@/assets/jos-city.jpg";
+import { useMinRoutePrice } from "@/hooks/useMinRoutePrice";
 
 const features = [
   {
     icon: Shield,
-    title: "Driver information",
-    description: "Review the driver and vehicle details shown on each available departure before booking.",
+    title: "Safety First",
+    description: "All vehicles undergo regular maintenance. Drivers are fully licensed and trained.",
   },
   {
     icon: Clock,
-    title: "Scheduled departures",
-    description: "Choose from departures available for your selected route and travel date.",
+    title: "Always On Time",
+    description: "We pride ourselves on punctuality. Your trip departs and arrives as scheduled.",
   },
   {
     icon: CreditCard,
@@ -20,8 +21,8 @@ const features = [
   },
   {
     icon: Headphones,
-    title: "Daily support",
-    description: "Contact our support team daily between 6:00 AM and 10:00 PM.",
+    title: "24/7 Support",
+    description: "Our customer service team is always available to assist you.",
   },
 ];
 
@@ -38,6 +39,7 @@ const itemVariants = {
 };
 
 export const Features = () => {
+  const { price } = useMinRoutePrice();
   return (
     <section className="section-padding bg-gradient-to-b from-background to-muted/40">
       <div className="container-custom">
@@ -54,7 +56,7 @@ export const Features = () => {
             Travel With Confidence
           </h2>
           <p className="text-muted-foreground max-w-2xl mx-auto">
-            Book scheduled intercity departures between Jos and Abuja.
+            Borix Express is committed to the best intercity travel experience in Nigeria.
           </p>
         </motion.div>
 
@@ -121,11 +123,11 @@ export const Features = () => {
               <div className="w-12 h-12 rounded-2xl bg-accent flex items-center justify-center mb-4">
                 <MapPin className="w-6 h-6 text-accent-foreground" />
               </div>
-              <h3 className="text-2xl md:text-3xl font-bold mb-3">Jos–Abuja service</h3>
+              <h3 className="text-2xl md:text-3xl font-bold mb-3">Wide Coverage</h3>
               <p className="text-white/80 mb-2">
-                Choose Jos to Abuja or Abuja to Jos and see the parks and departures available for your date.
+                Serving major Nigerian cities with dedicated parks and scheduled departures.
               </p>
-              <p className="text-accent font-semibold text-sm">See current fares when you choose a travel date.</p>
+              <p className="text-accent font-semibold text-sm">Fares from ₦{price.toLocaleString()}</p>
             </div>
             <ul className="grid grid-cols-2 gap-3">
               {cities.map((city) => (

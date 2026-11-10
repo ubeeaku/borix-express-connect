@@ -35,9 +35,6 @@ import Safety from "./pages/driver/Safety";
 import DriverLogin from "./pages/driver/DriverLogin";
 import DriverForgotPassword from "./pages/driver/DriverForgotPassword";
 import DriverDashboard from "./pages/driver/DriverDashboard";
-import PrivacyPolicy from "./pages/PrivacyPolicy";
-import TermsAndConditions from "./pages/TermsAndConditions";
-import Help from "./pages/Help";
 
 const queryClient = new QueryClient();
 
@@ -57,9 +54,6 @@ const App = () => (
           <Route path="/auth" element={<Auth />} />
           <Route path="/wallet" element={<Wallet />} />
           <Route path="/about" element={<About />} />
-          <Route path="/privacy-policy" element={<PrivacyPolicy />} />
-          <Route path="/terms-and-conditions" element={<TermsAndConditions />} />
-          <Route path="/help" element={<Help />} />
           <Route path="/driver/drive-with-us" element={<DriveWithUs />} />
           <Route path="/driver/requirements" element={<DriverRequirements />} />
           <Route path="/driver/apply" element={<DriverApplication />} />

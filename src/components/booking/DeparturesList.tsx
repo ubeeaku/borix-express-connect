@@ -2,7 +2,6 @@ import { useEffect, useState } from "react";
 import { Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { DepartureCard, type DepartureInfo } from "./DepartureCard";
-import { isDepartureUpcoming } from "@/lib/dateTime";
 
 interface DeparturesListProps {
   origin: string;
@@ -86,18 +85,7 @@ export const DeparturesList = ({
           return;
         }
 
-        const rows = (data as unknown as PublicDepartureRow[]).filter(
-          (departure) =>
-            isDepartureUpcoming(
-              departure.travel_date,
-              departure.departure_time,
-            ),
-        );
-
-        if (rows.length === 0) {
-          setDepartures([]);
-          return;
-        }
+        const rows = data as unknown as PublicDepartureRow[];
 
         // Get booked seat counts.
         const departureIds = rows.map(

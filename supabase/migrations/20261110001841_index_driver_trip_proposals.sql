@@ -1,0 +1,6 @@
+CREATE INDEX driver_trip_proposals_departure_id_idx ON public.driver_trip_proposals(departure_id);
+CREATE INDEX driver_trip_proposals_departure_park_id_idx ON public.driver_trip_proposals(departure_park_id);
+CREATE INDEX driver_trip_proposals_destination_park_id_idx ON public.driver_trip_proposals(destination_park_id);
+CREATE INDEX driver_trip_proposals_driver_id_idx ON public.driver_trip_proposals(driver_id);
+CREATE INDEX driver_trip_proposals_route_id_idx ON public.driver_trip_proposals(route_id);
+CREATE INDEX driver_trip_proposals_vehicle_id_idx ON public.driver_trip_proposals(vehicle_id);

@@ -370,8 +370,8 @@ export async function prepareDeparture(
 
   if (
     isNigeriaDepartureInPast(
-      String(departure.travel_date).slice(0, 10),
-      String(departure.departure_time)
+      departure.travel_date as string,
+      departure.departure_time as string
     )
   ) {
     return {
