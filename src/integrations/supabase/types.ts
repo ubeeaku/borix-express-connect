@@ -405,6 +405,7 @@ export type Database = {
         Row: {
           amount: number
           created_at: string
+          departure_id: string | null
           description: string | null
           driver_id: string
           id: string
@@ -416,6 +417,7 @@ export type Database = {
         Insert: {
           amount: number
           created_at?: string
+          departure_id?: string | null
           description?: string | null
           driver_id: string
           id?: string
@@ -427,6 +429,7 @@ export type Database = {
         Update: {
           amount?: number
           created_at?: string
+          departure_id?: string | null
           description?: string | null
           driver_id?: string
           id?: string
@@ -455,6 +458,152 @@ export type Database = {
             columns: ["trip_id"]
             isOneToOne: false
             referencedRelation: "driver_trips"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "driver_earnings_departure_id_fkey"
+            columns: ["departure_id"]
+            isOneToOne: false
+            referencedRelation: "departures"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      driver_payout_accounts: {
+        Row: {
+          account_name: string
+          account_number_last4: string
+          bank_code: string
+          bank_name: string
+          created_at: string
+          driver_id: string
+          id: string
+          recipient_code: string
+          updated_at: string
+        }
+        Insert: {
+          account_name: string
+          account_number_last4: string
+          bank_code: string
+          bank_name: string
+          created_at?: string
+          driver_id: string
+          id?: string
+          recipient_code: string
+          updated_at?: string
+        }
+        Update: {
+          account_name?: string
+          account_number_last4?: string
+          bank_code?: string
+          bank_name?: string
+          created_at?: string
+          driver_id?: string
+          id?: string
+          recipient_code?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "driver_payout_accounts_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: true
+            referencedRelation: "drivers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      driver_payout_requests: {
+        Row: {
+          amount: number
+          completed_at: string | null
+          created_at: string
+          currency: string
+          driver_id: string
+          id: string
+          paystack_transfer_code: string | null
+          recipient_code: string
+          reference: string
+          status: string
+          status_message: string | null
+          updated_at: string
+        }
+        Insert: {
+          amount: number
+          completed_at?: string | null
+          created_at?: string
+          currency?: string
+          driver_id: string
+          id?: string
+          paystack_transfer_code?: string | null
+          recipient_code: string
+          reference: string
+          status?: string
+          status_message?: string | null
+          updated_at?: string
+        }
+        Update: {
+          amount?: number
+          completed_at?: string | null
+          created_at?: string
+          currency?: string
+          driver_id?: string
+          id?: string
+          paystack_transfer_code?: string | null
+          recipient_code?: string
+          reference?: string
+          status?: string
+          status_message?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "driver_payout_requests_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      driver_payout_request_items: {
+        Row: {
+          amount: number
+          created_at: string
+          driver_earning_id: string
+          id: string
+          payout_request_id: string
+          released_at: string | null
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          driver_earning_id: string
+          id?: string
+          payout_request_id: string
+          released_at?: string | null
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          driver_earning_id?: string
+          id?: string
+          payout_request_id?: string
+          released_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "driver_payout_request_items_driver_earning_id_fkey"
+            columns: ["driver_earning_id"]
+            isOneToOne: false
+            referencedRelation: "driver_earnings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "driver_payout_request_items_payout_request_id_fkey"
+            columns: ["payout_request_id"]
+            isOneToOne: false
+            referencedRelation: "driver_payout_requests"
             referencedColumns: ["id"]
           },
         ]
@@ -1163,8 +1312,42 @@ export type Database = {
         Returns: boolean
       }
       is_admin: { Args: { _user_id: string }; Returns: boolean }
+      get_own_driver_wallet_summary: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          available_amount: number
+          paid_amount: number
+          pending_amount: number
+        }[]
+      }
+      reserve_driver_payout: {
+        Args: { p_user_id: string }
+        Returns: {
+          amount: number
+          reference: string
+          request_id: string
+        }[]
+      }
       update_own_driver_profile: {
         Args: { p_phone?: string | null; p_profile_photo_url?: string | null }
+        Returns: undefined
+      }
+      update_driver_payout_initiation: {
+        Args: {
+          p_message?: string | null
+          p_reference: string
+          p_status: string
+          p_transfer_code: string | null
+        }
+        Returns: undefined
+      }
+      finalize_driver_payout: {
+        Args: {
+          p_event: string
+          p_message?: string | null
+          p_reference: string
+          p_transfer_code?: string | null
+        }
         Returns: undefined
       }
     }

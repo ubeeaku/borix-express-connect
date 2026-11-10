@@ -10,6 +10,7 @@ import {
   RefreshCw,
   Plus,
   X,
+  DollarSign,
 } from "lucide-react";
 import { format } from "date-fns";
 import { AdminLayout } from "@/components/admin/AdminLayout";
@@ -100,6 +101,7 @@ type Departure = {
   vehicle: DepartureVehicle | null;
 
   bookedSeats: number;
+  driverEarning: { id: string; amount: number } | null;
 };
 
 const AdminTrips = () => {
@@ -117,6 +119,9 @@ const AdminTrips = () => {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [createOpen, setCreateOpen] = useState(false);
+  const [creditDeparture, setCreditDeparture] = useState<Departure | null>(null);
+  const [creditAmount, setCreditAmount] = useState("");
+  const [creditSaving, setCreditSaving] = useState(false);
 
   const [form, setForm] = useState({
     route_id: "",
@@ -282,6 +287,25 @@ const AdminTrips = () => {
         console.error("Failed to load booked seats:", seatError);
       }
 
+      const { data: earningRows, error: earningsError } = await supabase
+        .from("driver_earnings")
+        .select("id, departure_id, amount")
+        .in("departure_id", departureIds);
+
+      if (earningsError) {
+        console.error("Failed to load driver earnings:", earningsError);
+      }
+
+      const earningsByDeparture = new Map<string, { id: string; amount: number }>();
+      (earningRows ?? []).forEach((earning) => {
+        if (earning.departure_id) {
+          earningsByDeparture.set(earning.departure_id, {
+            id: earning.id,
+            amount: Number(earning.amount),
+          });
+        }
+      });
+
       const counts: Record<string, number> = {};
 
       (seatRows ?? []).forEach((seat) => {
@@ -316,6 +340,7 @@ const AdminTrips = () => {
             vehicle_capacity: row.vehicles.capacity !== null ? Number(row.vehicles.capacity) : null,
           } : null,
           bookedSeats: counts[row.id] ?? 0,
+          driverEarning: earningsByDeparture.get(row.id) ?? null,
         }))
       );
     } catch (error) {
@@ -612,6 +637,54 @@ const AdminTrips = () => {
     } finally {
       setSaving(false);
     }
+  };
+
+  const handleCreditDriverEarnings = async () => {
+    if (!creditDeparture?.driver || creditDeparture.status !== "completed") {
+      toast({ title: "Only completed trips can be credited", variant: "destructive" });
+      return;
+    }
+
+    const amount = Number(creditAmount);
+    if (!Number.isSafeInteger(amount) || amount <= 0) {
+      toast({ title: "Enter a valid earnings amount", description: "Use a positive whole amount in Naira.", variant: "destructive" });
+      return;
+    }
+
+    setCreditSaving(true);
+    const description = "Completed departure earnings: " +
+      (creditDeparture.route
+        ? creditDeparture.route.origin + " to " + creditDeparture.route.destination
+        : "departure") +
+      " on " + creditDeparture.travel_date;
+    const { error } = await supabase.from("driver_earnings").insert({
+      driver_id: creditDeparture.driver.id,
+      departure_id: creditDeparture.id,
+      amount,
+      type: "trip",
+      description,
+      paid: false,
+    });
+    setCreditSaving(false);
+
+    if (error) {
+      toast({
+        title: "Could not credit this trip",
+        description: error.code === "23505"
+          ? "Earnings have already been credited for this departure."
+          : error.message,
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setCreditDeparture(null);
+    setCreditAmount("");
+    toast({
+      title: "Driver earnings credited",
+      description: "₦" + amount.toLocaleString() + " is now available in the driver's wallet.",
+    });
+    await fetchDepartures();
   };
 
   const availableTrips = departures.filter(
@@ -1000,12 +1073,90 @@ const AdminTrips = () => {
                         View Manifest
                       </Button>
                     </div>
+
+                    {departure.status === "completed" && departure.driver && (
+                      <div className="border-t border-border pt-3">
+                        {departure.driverEarning ? (
+                          <div className="flex items-center gap-2 text-sm font-medium text-green-700">
+                            <DollarSign className="h-4 w-4" />
+                            Driver earnings credited: ₦{departure.driverEarning.amount.toLocaleString()}
+                          </div>
+                        ) : (
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={() => {
+                              setCreditDeparture(departure);
+                              setCreditAmount("");
+                            }}
+                          >
+                            <DollarSign className="mr-2 h-4 w-4" />
+                            Credit driver earnings
+                          </Button>
+                        )}
+                      </div>
+                    )}
                   </CardContent>
                 </Card>
               );
             })}
           </div>
         )}
+
+        <Dialog
+          open={!!creditDeparture}
+          onOpenChange={(open) => {
+            if (!open && !creditSaving) {
+              setCreditDeparture(null);
+              setCreditAmount("");
+            }
+          }}
+        >
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle>Credit completed trip</DialogTitle>
+            </DialogHeader>
+            {creditDeparture?.driver && (
+              <div className="space-y-4">
+                <div className="rounded-lg bg-muted p-3 text-sm">
+                  <p className="font-medium">{creditDeparture.driver.full_name}</p>
+                  <p className="text-muted-foreground">
+                    {creditDeparture.route
+                      ? creditDeparture.route.origin + " → " + creditDeparture.route.destination
+                      : "Route unavailable"}{" "}
+                    · {creditDeparture.travel_date}
+                  </p>
+                </div>
+                <div>
+                  <Label htmlFor="driver-trip-earning-amount">Driver earnings (₦) *</Label>
+                  <Input
+                    id="driver-trip-earning-amount"
+                    type="number"
+                    min="1"
+                    step="1"
+                    inputMode="numeric"
+                    value={creditAmount}
+                    onChange={(event) => setCreditAmount(event.target.value)}
+                    className="mt-1"
+                  />
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    This is the amount the driver can withdraw. Borix covers transfer charges.
+                  </p>
+                </div>
+                <Button
+                  type="button"
+                  className="w-full"
+                  onClick={() => void handleCreditDriverEarnings()}
+                  disabled={creditSaving}
+                >
+                  {creditSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                  {creditSaving ? "Crediting…" : "Credit driver wallet"}
+                </Button>
+              </div>
+            )}
+          </DialogContent>
+        </Dialog>
 
         {/* Create Departure Dialog */}
         <Dialog

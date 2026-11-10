@@ -11,6 +11,7 @@
     "lint": "eslint .",
     "test:departure-time": "node --experimental-strip-types --test tests/departure-time.test.mjs",
     "test:driver-trip-capacity": "node --experimental-strip-types --test tests/driver-trip-capacity.test.mjs",
+    "test:driver-payout": "node --experimental-strip-types --test tests/driver-payout.test.mjs",
     "preview": "vite preview"
   },
   "dependencies": {

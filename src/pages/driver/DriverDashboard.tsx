@@ -3,7 +3,7 @@ import { useNavigate, Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import {
   Car, MapPin, DollarSign, Calendar, Bell, Phone, LogOut, Clock,
-  CheckCircle, XCircle, TrendingUp, Loader2, Menu, X, UserRound
+  CheckCircle, XCircle, TrendingUp, Loader2, Menu, X, UserRound, WalletCards
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -12,6 +12,7 @@ import { toast } from "@/hooks/use-toast";
 import borixLogo from "@/assets/borix-logo-white.png";
 import DriverTripProposals from "@/components/driver/DriverTripProposals";
 import DriverProfile from "@/components/driver/DriverProfile";
+import DriverWallet from "@/components/driver/DriverWallet";
 
 type Driver = {
   id: string;
@@ -176,6 +177,7 @@ const DriverDashboard = () => {
     { id: "trips", label: "My Trips", icon: MapPin },
     { id: "propose", label: "Propose Trip", icon: Car },
     { id: "earnings", label: "Earnings", icon: DollarSign },
+    { id: "wallet", label: "Wallet", icon: WalletCards },
     { id: "notifications", label: "Notifications", icon: Bell, badge: unreadNotifs },
     { id: "profile", label: "Profile", icon: UserRound },
   ];
@@ -339,6 +341,10 @@ const DriverDashboard = () => {
                 ))
               )}
             </div>
+          )}
+
+          {activeTab === "wallet" && driver && (
+            <DriverWallet driverId={driver.id} />
           )}
 
           {activeTab === "notifications" && (

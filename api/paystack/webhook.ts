@@ -129,6 +129,78 @@ export default async function handler(req: Request) {
 
   try {
     /*
+     * Driver bank payout status
+     */
+    if (
+      ['transfer.success', 'transfer.failed', 'transfer.reversed'].includes(type) &&
+      data.reference
+    ) {
+      const reference = String(data.reference);
+      if (!/^brx_dp_[a-f0-9]{32}$/.test(reference)) {
+        return new Response(JSON.stringify({ success: true, ignored: true }), {
+          status: 200,
+          headers: { 'Content-Type': 'application/json' },
+        });
+      }
+
+      const { data: payout, error: payoutLookupError } = await supabase
+        .from('driver_payout_requests')
+        .select('amount, currency, recipient_code')
+        .eq('reference', reference)
+        .maybeSingle();
+
+      if (payoutLookupError) {
+        console.error('[paystack-webhook] Driver payout lookup failed:', payoutLookupError);
+        return new Response(JSON.stringify({ success: false, error: 'Payout lookup failed' }), {
+          status: 500,
+          headers: { 'Content-Type': 'application/json' },
+        });
+      }
+
+      if (!payout) {
+        return new Response(JSON.stringify({ success: true, ignored: true }), {
+          status: 200,
+          headers: { 'Content-Type': 'application/json' },
+        });
+      }
+
+      const expectedAmountKobo = Number(payout.amount) * 100;
+      const eventAmountKobo = Number(data.amount);
+      const eventRecipientCode = data.recipient?.recipient_code;
+      if (
+        !Number.isSafeInteger(eventAmountKobo) ||
+        eventAmountKobo !== expectedAmountKobo ||
+        (data.currency && data.currency !== payout.currency) ||
+        (eventRecipientCode && eventRecipientCode !== payout.recipient_code)
+      ) {
+        console.error('[paystack-webhook] Driver payout details did not match the reserved request');
+        return new Response(JSON.stringify({ success: false, error: 'Payout details mismatch' }), {
+          status: 400,
+          headers: { 'Content-Type': 'application/json' },
+        });
+      }
+
+      const { error: finalizeError } = await supabase.rpc('finalize_driver_payout', {
+        p_reference: reference,
+        p_event: type,
+        p_transfer_code: data.transfer_code ? String(data.transfer_code) : null,
+        p_message: data.reason ? String(data.reason) : null,
+      });
+      if (finalizeError) {
+        console.error('[paystack-webhook] Driver payout update failed:', finalizeError);
+        return new Response(JSON.stringify({ success: false, error: 'Payout update failed' }), {
+          status: 500,
+          headers: { 'Content-Type': 'application/json' },
+        });
+      }
+
+      return new Response(JSON.stringify({ success: true }), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' },
+      });
+    }
+
+    /*
      * Successful payment
      */
     if (
