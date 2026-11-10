@@ -243,13 +243,13 @@ const AdminTrips = () => {
             destination,
             price
           ),
-          parks (
+          park:parks!departures_park_id_fkey (
             id,
             name,
             city,
             status
           ),
-          drivers (
+          driver:drivers!departures_driver_id_fkey (
             id,
             full_name,
             phone,
@@ -305,8 +305,8 @@ const AdminTrips = () => {
           commission_amount: Number(row.commission_amount ?? 0),
           status: row.status,
           route: row.routes ?? null,
-          park: row.parks ?? null,
-          driver: row.drivers ?? null,
+          park: row.park ?? null,
+          driver: row.driver ?? null,
           vehicle: row.vehicles ? {
             vehicle_type: row.vehicles.vehicle_type ?? null,
             vehicle_model: null,
@@ -324,9 +324,11 @@ const AdminTrips = () => {
       toast({
         title: "Failed to load trips",
         description:
-          error instanceof Error
-            ? error.message
-            : "Unable to load departures.",
+          error && typeof error === "object" && "message" in error
+            ? String(error.message)
+            : error instanceof Error
+              ? error.message
+              : "Unable to load departures.",
         variant: "destructive",
       });
 
