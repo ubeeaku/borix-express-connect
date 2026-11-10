@@ -68,13 +68,19 @@ const DriverDashboard = () => {
       return;
     }
 
-    // Check driver role
-    const { data: hasRole } = await supabase.rpc('has_role', {
-      _user_id: session.user.id,
-      _role: 'driver',
-    });
+    // has_role is intentionally restricted to service_role in this project.
+    // Read the signed-in driver's own role row, matching the login screen.
+    const { data: driverRole, error: roleError } = await supabase
+      .from('user_roles')
+      .select('id')
+      .eq('user_id', session.user.id)
+      .eq('role', 'driver')
+      .maybeSingle();
 
-    if (!hasRole) {
+    if (roleError || !driverRole) {
+      console.error('Driver role check failed:', roleError);
+      toast({ title: "Driver access could not be verified", description: "Please sign in again or contact an administrator.", variant: "destructive" });
+      await supabase.auth.signOut();
       navigate("/driver/login");
       return;
     }

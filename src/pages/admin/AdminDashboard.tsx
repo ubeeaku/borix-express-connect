@@ -23,6 +23,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { useAdminAuth } from "@/hooks/useAdminAuth";
 import borixLogo from "@/assets/borix-logo-white.png";
+import { supabase } from "@/integrations/supabase/client";
 
 const sidebarItems = [
   { name: "Dashboard", icon: LayoutDashboard, path: "/admin/dashboard" },
@@ -78,8 +79,28 @@ const recentBookings = [
 
 const AdminDashboard = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [pendingTripProposals, setPendingTripProposals] = useState<number | null>(null);
   const location = useLocation();
   const { user, isAdmin, isLoading, signOut } = useAdminAuth();
+
+  useEffect(() => {
+    if (!isAdmin) return;
+    let cancelled = false;
+    void supabase
+      .from("driver_trip_proposals")
+      .select("id", { count: "exact", head: true })
+      .eq("status", "pending")
+      .then(({ count, error }) => {
+        if (cancelled) return;
+        if (error) {
+          console.error("Failed to load pending trip proposals:", error);
+          setPendingTripProposals(null);
+          return;
+        }
+        setPendingTripProposals(count ?? 0);
+      });
+    return () => { cancelled = true; };
+  }, [isAdmin]);
 
   // Show loading state while checking authentication
   if (isLoading) {
@@ -219,6 +240,24 @@ const AdminDashboard = () => {
               </motion.div>
             ))}
           </div>
+
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="mb-8 flex flex-col gap-4 rounded-2xl border border-accent/30 bg-card p-6 shadow-sm sm:flex-row sm:items-center sm:justify-between"
+          >
+            <div>
+              <h2 className="text-lg font-bold text-foreground">Driver trip proposals</h2>
+              <p className="text-sm text-muted-foreground">
+                {pendingTripProposals === null
+                  ? "Review driver-submitted trips and set their fares."
+                  : `${pendingTripProposals} trip${pendingTripProposals === 1 ? "" : "s"} waiting for review.`}
+              </p>
+            </div>
+            <Link to="/admin/trips">
+              <Button>Review proposals</Button>
+            </Link>
+          </motion.div>
 
           {/* Recent Bookings */}
           <motion.div
